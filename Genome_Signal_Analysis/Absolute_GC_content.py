@@ -7,49 +7,41 @@ import concurrent.futures
 import time
 import matplotlib.pyplot as plt
 
+Group = 'Plant' # 'Eukaryote'
+Total_Input_Files = 3
+
+COL = [str(i) for i in range(2000)]
+
+Input_seq_file = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Data\osativa\input_fasta"
+Results_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa"
 
 def main(n):
+    df_seq = pd.DataFrame()
 
-    df_u_region = pd.DataFrame()
-    df_d_region = pd.DataFrame()
+    for seq_record in SeqIO.parse(Input_seq_file+"\group_"+str(n)+".fasta", "fasta"):
+        header = seq_record.id.split('|')
+        if Group == 'Plant':
+            print(header[1])
+            TRANSCRIPT_ID = header[1]
+        else:
+            print(header[2])
+            TRANSCRIPT_ID = header[2]
 
-    df_u_seq = pd.DataFrame()
-    df_d_seq = pd.DataFrame()
+        sequ = list(seq_record.seq[:2000])
+        print(len(sequ))
+        temp_seq = pd.DataFrame(sequ, index=COL)
+    return None
 
-    for (seq_record_1, seq_record_2) in zip(
-            SeqIO.parse(r"C:\Users\maya620d\Documents\Notebooks\Output_files\region_human_"+str(n)+".fasta", "fasta"),
-            SeqIO.parse(r"C:\Users\maya620d\Documents\Notebooks\Input_files\chunk"+str(n)+".fasta", "fasta")):
-        #     print(seq_record_1.id)
-        #     print(seq_record_2.id)
+    #     temp_seq = temp_seq.T
+    #     temp_seq['id'] = TRANSCRIPT_ID
+    #     df_seq = pd.concat([df_seq, temp_seq], axis=0)
+    #
+    # df_seq = df_seq.replace(["A", "C", "G", "T", "N"], [0, 1, 1, 0, 0])
+    # df_seq.reset_index(inplace=True, drop=True)
+    # df_seq = df_seq.drop('id', axis=1)
+    #
+    # return df_seq.sum(axis=0), len(df_seq)
 
-        #     upstream_region = seq_record_1.seq[:1000]
-        downstream_region = seq_record_1.seq[1000:2000]
-
-        #     temp_u_region = pd.DataFrame(list(upstream_region))
-        temp_d_region = pd.DataFrame(list(downstream_region))
-        temp_d_region = temp_d_region.T
-        #     df_u_region=pd.concat([df_u_region, temp_u_region], axis =1)
-
-        temp_d_region['id'] = (seq_record_1.id).split('|')[0]
-
-        df_d_region = pd.concat([df_d_region, temp_d_region], axis=0)
-
-        upstream_seq = seq_record_2.seq[:1000]
-        downstream_seq = seq_record_2.seq[1000:2000]
-
-        temp_u_seq = pd.DataFrame(list(upstream_seq))
-        temp_d_seq = pd.DataFrame(list(downstream_seq))
-
-        temp_u_seq = temp_u_seq.T
-        temp_d_seq = temp_d_seq.T
-
-        temp_u_seq['id'] = (seq_record_2.id).split('|')[2]
-        temp_d_seq['id'] = (seq_record_2.id).split('|')[2]
-
-        df_u_seq = pd.concat([df_u_seq, temp_u_seq], axis=0)
-        df_d_seq = pd.concat([df_d_seq, temp_d_seq], axis=0)
-
-    return df_u_seq, df_d_seq, df_d_region
 
 
 ###Calculate the absolute GC content
@@ -84,50 +76,72 @@ def absolute_gc_content(df_u, df_d):
 if __name__ == "__main__":
     start = time.perf_counter()
 
-    df_U_SEQ = pd.DataFrame()
-    df_D_SEQ = pd.DataFrame()
-    df_D_REGION = pd.DataFrame()
+    # df_U_SEQ = pd.DataFrame()
+    # df_D_SEQ = pd.DataFrame()
+    # df_D_REGION = pd.DataFrame()
+    len_df = 0
+    df = pd.DataFrame()
+
+    for i in range(1, 44):
+        main(i)
+
+    import sys
+    sys.exit()
+
 
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        iter_seq = range(0, 97000, 1000)
+        iter_seq = range(1, Total_Input_Files+1)
         pool = [executor.submit(main, n=i) for i in iter_seq]
         for j in concurrent.futures.as_completed(pool):
             # print(f'Return Value: {i.result()}')
-            temp_df_u_seq, temp_df_d_seq, temp_df_d_region = j.result()
+            # temp_df_u_seq, temp_df_d_seq, temp_df_d_region = j.result()
+            #
+            # print('File Reading: Region dataframe size: {} and Up and Downstream Sequence dataframe size: {} and {}'.format(temp_df_d_region.shape, temp_df_u_seq.shape, temp_df_d_seq.shape))
+            # if temp_df_d_region.shape[0] != temp_df_d_seq.shape[0]:
+            #     print('Warning, Region and Seq does not match during File Reading for file {}'.format(j))
+            #
+            # elif temp_df_d_region.shape[0] != temp_df_u_seq.shape[0]:
+            #     print('Warning, Region and Seq does not match during File Reading for file {}'.format(j))
+            #
+            # elif temp_df_d_seq.shape[0] != temp_df_u_seq.shape[0]:
+            #     print('Warning, Upstream and Downstream Seq does not match during File Reading for file {}'.format(j))
+            #
+            # df_D_REGION = pd.concat([df_D_REGION, temp_df_d_region], axis=0)
+            # df_D_SEQ = pd.concat([df_D_SEQ, temp_df_d_seq], axis=0)
+            # df_U_SEQ = pd.concat([df_U_SEQ, temp_df_u_seq], axis=0)
 
-            print('File Reading: Region dataframe size: {} and Up and Downstream Sequence dataframe size: {} and {}'.format(temp_df_d_region.shape, temp_df_u_seq.shape, temp_df_d_seq.shape))
-            if temp_df_d_region.shape[0] != temp_df_d_seq.shape[0]:
-                print('Warning, Region and Seq does not match during File Reading for file {}'.format(j))
+            df_temp, temp_len_df = j.result()
+            len_df = len_df + temp_len_df
+            df = pd.concat([df, df_temp], axis=1)  ##Output is Series so we have to concatenate the Series horizontally
+            print(df.shape)
 
-            elif temp_df_d_region.shape[0] != temp_df_u_seq.shape[0]:
-                print('Warning, Region and Seq does not match during File Reading for file {}'.format(j))
+    df = df.reset_index(drop=True)
+    print(df.head(3))
+    print(len_df)
+    # print(df.sum(axis=1)/len_df)
+    absolute_gc = df.sum(axis=1) / len_df
+    absolute_gc.to_csv(Results_path+"\Files\/absolute_gc_content.csv")
 
-            elif temp_df_d_seq.shape[0] != temp_df_u_seq.shape[0]:
-                print('Warning, Upstream and Downstream Seq does not match during File Reading for file {}'.format(j))
 
-            df_D_REGION = pd.concat([df_D_REGION, temp_df_d_region], axis=0)
-            df_D_SEQ = pd.concat([df_D_SEQ, temp_df_d_seq], axis=0)
-            df_U_SEQ = pd.concat([df_U_SEQ, temp_df_u_seq], axis=0)
 
-    end = time.perf_counter()
-    print(f'Finished in {round(end - start, 2)} second(s)')
-
-    df_U_SEQ_T = df_U_SEQ.replace(["A", "C", "G", "T", "N"], [1, 2, 3, 4, 0])
-    df_D_SEQ_T = df_D_SEQ.replace(["A", "C", "G", "T", "N"], [1, 2, 3, 4, 0])
-
-    pos_gc_content, x_axis_col = absolute_gc_content(df_U_SEQ, df_D_SEQ)
+    # df_U_SEQ_T = df_U_SEQ.replace(["A", "C", "G", "T", "N"], [1, 2, 3, 4, 0])
+    # df_D_SEQ_T = df_D_SEQ.replace(["A", "C", "G", "T", "N"], [1, 2, 3, 4, 0])
+    #
+    # pos_gc_content, x_axis_col = absolute_gc_content(df_U_SEQ, df_D_SEQ)
 
     plt.figure(figsize=(20, 10))
     # sns.scatterplot(x=x_axis_col, y=pos_gc_content)
-    sns.scatterplot(x=range(-1000, 1000), y=pos_gc_content)
+    sns.scatterplot(x=range(-1000, 1000), y=absolute_gc)
 
     plt.xlabel("Position w.r.t TSS")
     plt.ylabel("%GC content")
-    plt.title("")
+    plt.title("GC content per Base position")
     # plt.xticks(rotation = 90)
     plt.xticks(np.arange(-1000, 1000, 50), rotation=45)
     # plt.show()
-    plt.savefig('absolute_gc_content.png')
+    plt.savefig(Results_path+'\Charts\Chart0_absolute_gc_content.png')
 
+    end = time.perf_counter()
+    print(f'Finished in {round(end - start, 2)} second(s)')
 
 

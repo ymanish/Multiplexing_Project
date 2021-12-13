@@ -5,9 +5,9 @@ import copy
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-element_GC_density_perbasepose_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa\Files\element_GC_density_perbasepos.csv"
-element_density_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa\Files\elements_density.csv"
-Avg_GC_per_element_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa\Files\Avg_GC_per_element.csv"
+element_GC_density_perbasepose_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa\Files\NUC_element_GC_density_perbasepos.csv"
+element_density_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa\Files\NUC_elements_density.csv"
+Avg_GC_per_element_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa\Files\NUC_Avg_GC_per_element.csv"
 
 Results_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa"
 
@@ -28,11 +28,11 @@ plt.figure(figsize=(20, 10))
 sns.scatterplot(data=df_GC_Element, x='position', y="density", hue='variable')
 
 plt.xlabel("Position w.r.t TSS")
-plt.ylabel("%GC content * %Occurrence")
+plt.ylabel("% Nucleosomal GC content * % Nucleosomal Occurrence")
 plt.title("%GC distribution by Region per base position, with Average across ALL the Transcripts")
 plt.xticks(rotation=0)
 # plt.show()
-plt.savefig(Results_path+'\Charts\Chart4_GC_Density_and_element_density.png')
+plt.savefig(Results_path+'\Charts\/NUC_Chart4_GC_Density_and_element_density.png')
 
 
 absolute_GC = df_GC_Element.groupby('position').agg({'density':sum}).reset_index()
@@ -41,11 +41,11 @@ plt.figure(figsize=(20, 10))
 sns.scatterplot(data=absolute_GC, x='position', y="density")
 
 plt.xlabel("Position w.r.t TSS")
-plt.ylabel("Sum(%GC content * %Occurrence)")
+plt.ylabel("Sum(% Nucleosomal GC content * % Nucleosomal Occurrence)")
 plt.title("Absolute GC content averaged across ALL transcripts")
 plt.xticks(rotation=0)
 # plt.show()
-plt.savefig(Results_path+'\Charts\Chart6_Derived_Absolute_GC.png')
+plt.savefig(Results_path+'\Charts\/NUC_Chart6_Derived_Absolute_GC.png')
 
 
 def multiply_operation(el, density, tab):
@@ -60,11 +60,11 @@ plt.figure(figsize=(20, 10))
 sns.scatterplot(data=Element_density, x='position', y="Homoginized_density_GC", hue='variable')
 
 plt.xlabel("Position w.r.t TSS")
-plt.ylabel("%GC content * %Occurrence")
+plt.ylabel("% Nucleosomal GC content * % Nucleosomal Occurrence")
 plt.title("Average %GC distribution by Region per base position")
 plt.xticks(rotation=0)
 # plt.show()
-plt.savefig(Results_path+'\Charts\Chart5_Avg_GC_Density_and_element_density.png')
+plt.savefig(Results_path+'\Charts\/NUC_Chart5_Avg_GC_Density_and_element_density.png')
 
 AVG_absolute_GC = Element_density.groupby('position').agg({'Homoginized_density_GC':sum}).reset_index()
 
@@ -72,8 +72,8 @@ plt.figure(figsize=(20, 10))
 sns.scatterplot(data=AVG_absolute_GC, x='position', y="Homoginized_density_GC")
 
 plt.xlabel("Position w.r.t TSS")
-plt.ylabel("Sum(%GC content * %Occurrence)")
+plt.ylabel("Sum(% Nucleosomal GC content * % Nucleosomal Occurrence)")
 plt.title("Average %GC distribution per base position")
 plt.xticks(rotation=0)
 # plt.show()
-plt.savefig(Results_path+'\Charts\Chart7_Derived_Avg_Absolute_GC.png')
+plt.savefig(Results_path+'\Charts\/NUC_Chart7_Derived_Avg_Absolute_GC.png')

@@ -7,6 +7,12 @@ import concurrent.futures
 import time
 import matplotlib.pyplot as plt
 
+
+Input_files = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Data\osativa\output_fasta"
+Results_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa"
+
+Total_Input_Files = 2
+
 def density_array(T_df, to_rep, with_rep):
     exon_den_df = T_df.replace(to_rep, with_rep)
     density_list = exon_den_df.sum(axis=0)
@@ -16,7 +22,7 @@ def spare_matrix(file_number):
 
     df = pd.DataFrame()
 
-    for seq_record in SeqIO.parse(r"C:\Users\maya620d\Documents\Notebooks\Output_files\region_human_"+str(file_number)+".fasta", "fasta"):
+    for seq_record in SeqIO.parse(Input_files+"\/region_group_"+str(file_number)+".fasta", "fasta"):
         #     upstream=seq_record.seq[:1000]
         down_region = seq_record.seq[1000:2000]
         temp = pd.DataFrame(list(down_region))
@@ -50,7 +56,7 @@ if __name__ == "__main__":
     DUTR_df = pd.DataFrame()
 
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        iter_seq = range(0,2000,1000)
+        iter_seq = range(1, Total_Input_Files+1)
         pool = [executor.submit(spare_matrix, file_number=i) for i in iter_seq]
         for j in concurrent.futures.as_completed(pool):
             #print(f'Return Value: {j.result()}')
@@ -96,16 +102,15 @@ if __name__ == "__main__":
     densities_T['position'] = densities_T.index
     densities_T_melt = pd.melt(densities_T, id_vars=['position'])
     densities_T_melt.rename({'value': 'density'}, inplace=True, axis=1)
-
-    densities_T_melt.to_csv("./elements_density.csv")
+    densities_T_melt.to_csv(Results_path+"\Files\elements_density.csv")
 
 
     plt.figure(figsize=(20, 10))
     sns.scatterplot(data=densities_T_melt, x='position', y='density', hue="variable")
     plt.xlabel("Position w.r.t TSS")
     plt.ylabel("%Occurrence")
-    plt.title("")
+    plt.title("Element Density per Base position")
     plt.xticks(rotation=0)
     # plt.show()
-    plt.savefig('density_chart.png')
+    plt.savefig(Results_path+'\Charts\Chart1_Element_density.png')
 

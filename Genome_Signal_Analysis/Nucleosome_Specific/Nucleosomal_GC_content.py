@@ -7,7 +7,14 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 COL= [str(i) for i in range(2000)]
-ZERO_COL = [str(i) for i in range(73)] + [str(j) for j in range(1927,2000)]
+ZERO_COL = [str(i) for i in range(73)] + [str(j) for j in range(1927, 2000)]
+
+Group = 'Plant' # 'Eukaryote'
+Total_Input_Files = 3
+
+Input_seq_file = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Data\osativa\input_fasta"
+Results_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa"
+
 
 def sum_columns(s):
     ID = s['id']
@@ -17,11 +24,17 @@ def sum_columns(s):
 def nucleosomal_GC_file(n):
     df_seq = pd.DataFrame()
 
-    for seq_record in SeqIO.parse(r"C:\Users\maya620d\PycharmProjects\Multiplexing\input_fasta\group_"+str(n)+".fasta", "fasta"):
+    for seq_record in SeqIO.parse(Input_seq_file+"\group_"+str(n)+".fasta", "fasta"):
 
         header = seq_record.id.split('|')
-        print(header[2])
-        TRANSCRIPT_ID = header[2]
+
+        if Group == 'Plant':
+            print(header[1])
+            TRANSCRIPT_ID = header[1]
+        else:
+            print(header[2])
+            TRANSCRIPT_ID = header[2]
+
         sequ = list(seq_record.seq[:2000])
         temp_seq = pd.DataFrame(sequ, index=COL)
         temp_seq = temp_seq.T
@@ -36,7 +49,7 @@ def nucleosomal_GC_file(n):
     df_seq_[COL] = df_seq_[COL] / 147
     df_seq_[ZERO_COL] = 0
 
-    df_seq_.to_csv(r"C:\Users\maya620d\PycharmProjects\Multiplexing\Nucleosome_GC\group_"+str(n)+".csv")
+    # df_seq_.to_csv(r"C:\Users\maya620d\PycharmProjects\Multiplexing\Nucleosome_GC\group_"+str(n)+".csv")
 
     df_seq_ = df_seq_.drop('id', axis=1)
     return df_seq_.sum(axis=0), len(df_seq_)
@@ -49,7 +62,7 @@ if __name__ == "__main__":
     df = pd.DataFrame()
 
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        iter_seq = range(1, 6)
+        iter_seq = range(1, Total_Input_Files)
         pool = [executor.submit(nucleosomal_GC_file, n=i) for i in iter_seq]
         for i in concurrent.futures.as_completed(pool):
             print('Return Value: {}', i)
@@ -64,15 +77,18 @@ if __name__ == "__main__":
     # print(df.sum(axis=1)/len_df)
     absolute_gc = df.sum(axis=1)/len_df
 
+    absolute_gc.to_csv(Results_path+"\Files\/NUC_absolute_gc_content.csv")
+
+
     plt.figure(figsize=(20, 10))
     sns.scatterplot(x=range(-1000, 1000), y=absolute_gc)
 
     plt.xlabel("Position w.r.t TSS")
-    plt.ylabel("%GC content")
-    plt.title("")
+    plt.ylabel("% Nucleosomal GC content")
+    plt.title("Nucleosome GC content per Base position")
     # plt.xticks(rotation = 90)
     plt.xticks(np.arange(-1000, 1000, 50), rotation=45)
-    plt.savefig('absolute_gc_content.png')
+    plt.savefig(Results_path+'\Charts\/NUC_Chart0_absolute_gc_content.png')
     # plt.show()
 
     end = time.perf_counter()

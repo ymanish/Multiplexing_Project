@@ -7,6 +7,12 @@ import concurrent.futures
 import time
 import matplotlib.pyplot as plt
 
+Input_files = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Data\osativa\output_fasta"
+Results_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa"
+
+Total_Input_Files = 2
+
+
 def replace_chars(T_df, to_rep, with_rep):
     exon_den_df = T_df.replace(to_rep, with_rep)
     return exon_den_df
@@ -19,8 +25,7 @@ def main(n):
     df = pd.DataFrame()
     COL = [str(i) for i in range(853, 2000)]
 
-    for seq_record in SeqIO.parse(
-            r"C:\Users\maya620d\PycharmProjects\Multiplexing\output_fasta\region_human_" + str(n) + ".fasta", "fasta"):
+    for seq_record in SeqIO.parse(Input_files+"\/region_group_" + str(n) + ".fasta", "fasta"):
         #     upstream=seq_record.seq[:1000]
         down_region = seq_record.seq[853:2000]
         temp = pd.DataFrame(list(down_region), index=COL)
@@ -59,7 +64,7 @@ if __name__ == "__main__":
     DUTR_df = pd.DataFrame()
 
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        iter_seq = range(1, 5)
+        iter_seq = range(1, Total_Input_Files)
         pool = [executor.submit(main, n=i) for i in iter_seq]
         for i in concurrent.futures.as_completed(pool):
             # print(f'Return Value: {i.result()}')
@@ -88,18 +93,17 @@ if __name__ == "__main__":
     region_density_T_melt.rename({'value': 'density'}, inplace=True, axis=1)
     region_density_T_melt['position'] = region_density_T_melt['position'].astype(int)
 
-    region_density_T_melt.to_csv("elements_density.csv")
-
     region_density_T_melt['position'] = region_density_T_melt['position'] - 1000
+    region_density_T_melt.to_csv(Results_path+"\Files\/NUC_elements_density.csv")
 
     plt.figure(figsize=(20, 10))
     sns.scatterplot(data=region_density_T_melt, x='position', y='density', hue="variable")
     plt.xlabel("Position w.r.t TSS")
-    plt.ylabel("%Occurrence")
-    plt.title("")
+    plt.ylabel("% Nucleosomal Occurrence")
+    plt.title("Nucleosomal: Element Density per Base position")
     plt.xticks(rotation=0)
     # plt.show()
-    plt.savefig('density_chart.png')
+    plt.savefig(Results_path+'\Charts\/NUC_Chart1_Element_density.png')
 
     end = time.perf_counter()
     print(f'Finished in {round(end - start, 2)} second(s)')

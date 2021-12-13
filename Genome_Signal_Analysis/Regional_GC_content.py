@@ -8,8 +8,19 @@ import time
 import matplotlib.pyplot as plt
 
 
-def main(n):
+Input_files_region = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Data\osativa\output_fasta"
+Input_files_seq = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Data\osativa\input_fasta"
 
+Results_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa"
+
+Total_Input_Files = 2
+Group = 'Plant' # 'Eukaryote'
+
+
+
+
+def main(n):
+    dol_COL = [str(i) for i in range(1000, 2000)]
     df_u_region = pd.DataFrame()
     df_d_region = pd.DataFrame()
 
@@ -17,8 +28,8 @@ def main(n):
     df_d_seq = pd.DataFrame()
 
     for (seq_record_1, seq_record_2) in zip(
-            SeqIO.parse(r"C:\Users\maya620d\Documents\Notebooks\Output_files\region_human_"+str(n)+".fasta", "fasta"),
-            SeqIO.parse(r"C:\Users\maya620d\Documents\Notebooks\Input_files\chunk"+str(n)+".fasta", "fasta")):
+            SeqIO.parse(Input_files_region+"\/region_group_"+str(n)+".fasta", "fasta"),
+            SeqIO.parse(Input_files_seq+"\group_"+str(n)+".fasta", "fasta")):
         #     print(seq_record_1.id)
         #     print(seq_record_2.id)
 
@@ -26,7 +37,7 @@ def main(n):
         downstream_region = seq_record_1.seq[1000:2000]
 
         #     temp_u_region = pd.DataFrame(list(upstream_region))
-        temp_d_region = pd.DataFrame(list(downstream_region))
+        temp_d_region = pd.DataFrame(list(downstream_region), index=dol_COL)
         temp_d_region = temp_d_region.T
         temp_d_region['id'] = (seq_record_1.id).split('|')[0]
 
@@ -36,13 +47,16 @@ def main(n):
         downstream_seq = seq_record_2.seq[1000:2000]
 
         # temp_u_seq = pd.DataFrame(list(upstream_seq))
-        temp_d_seq = pd.DataFrame(list(downstream_seq))
+        temp_d_seq = pd.DataFrame(list(downstream_seq), index=dol_COL)
 
         # temp_u_seq = temp_u_seq.T
         temp_d_seq = temp_d_seq.T
 
         # temp_u_seq['id'] = (seq_record_2.id).split('|')[2]
-        temp_d_seq['id'] = (seq_record_2.id).split('|')[2]
+        if Group == 'Plant':
+            temp_d_seq['id'] = (seq_record_2.id).split('|')[1]
+        else:
+            temp_d_seq['id'] = (seq_record_2.id).split('|')[2]
 
         # df_u_seq = pd.concat([df_u_seq, temp_u_seq], axis=0)
         df_d_seq = pd.concat([df_d_seq, temp_d_seq], axis=0)
@@ -78,7 +92,7 @@ def density_GC_Region_and_Avg(df_region, region_code, df_seq):
     df_u_d_temp = df_u_d_temp.dropna(axis=0)  ###Dropping any short sequences
     df_seq_region = pd.DataFrame()
 
-    for pos in range(1000):
+    for pos in range(1000, 2000):
         df_seq_region.loc[:, str(pos)] = df_u_d_temp.loc[:, str(pos) + '_x'] * df_u_d_temp.loc[:, str(pos) + '_y']
 
     df_seq_region = df_seq_region.replace([1, 2, 3, 4], [0, 1, 1, 0])
@@ -105,7 +119,7 @@ if __name__ == "__main__":
     df_D_REGION = pd.DataFrame()
 
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        iter_seq = range(0, 2000, 1000)
+        iter_seq = range(1, Total_Input_Files+1)
         pool = [executor.submit(main, n=i) for i in iter_seq]
         for j in concurrent.futures.as_completed(pool):
             # print(f'Return Value: {i.result()}')
@@ -119,8 +133,6 @@ if __name__ == "__main__":
             df_D_SEQ = pd.concat([df_D_SEQ, temp_df_d_seq], axis=0)
             # df_U_SEQ = pd.concat([df_U_SEQ, temp_df_u_seq], axis=0)
 
-    end = time.perf_counter()
-    print(f'Finished in {round(end - start, 2)} second(s)')
 
     # df_U_SEQ_T = df_U_SEQ.replace(["A", "C", "G", "T", "N"], [1, 2, 3, 4, 0])
     df_D_SEQ_T = df_D_SEQ.replace(["A", "C", "G", "T", "N"], [1, 2, 3, 4, 0])
@@ -132,6 +144,14 @@ if __name__ == "__main__":
     intron_code = [0, 0, 0, 1, 0, 0]
     UUTR_code = [1, 0, 0, 0, 0, 0]
     DUTR_code = [0, 0, 1, 0, 0, 0]
+
+    df_D_REGION.reset_index(inplace=True, drop=True)
+    df_D_SEQ_T.reset_index(inplace=True, drop=True)
+    #
+    # print(df_D_REGION.index)
+    # print(df_D_SEQ_T.index)
+    # import sys
+    # sys.exit()
 
     density_exon_GC, avg_exon_GC = density_GC_Region_and_Avg(df_D_REGION, exon_code, df_D_SEQ_T)
     density_intron_GC, avg_intron_GC = density_GC_Region_and_Avg(df_D_REGION, intron_code, df_D_SEQ_T)
@@ -150,8 +170,11 @@ if __name__ == "__main__":
                               'Avg_GC': [avg_exon_GC, avg_intron_GC, avg_UUTR_GC, avg_DUTR_GC]
                               })
 
-    avg_GC_df.to_csv('Avg_GC_element_density.csv')
-    densities_T_melt.to_csv("GC_element_density.csv")
+    avg_GC_df.to_csv(Results_path+'\Files\Avg_GC_per_element.csv')
+
+    densities_T_melt['position'] = densities_T_melt['position'].astype(int)
+    densities_T_melt['position'] = densities_T_melt['position'] - 1000
+    densities_T_melt.to_csv(Results_path+"\Files\element_GC_density_perbasepos.csv")
 
     # x=range(1000)
 
@@ -159,20 +182,23 @@ if __name__ == "__main__":
     sns.barplot(x="element", y="Avg_GC", data=avg_GC_df)
 
     plt.xlabel("Region")
-    plt.ylabel("Avg GC content")
-    plt.title("")
+    plt.ylabel("%GC content")
+    plt.title("Average GC content per Region")
     # plt.xticks(rotation = 90)
     # plt.xticks(np.arange(-1000, 1000, 50), rotation=45)
     # plt.show()
-    plt.savefig('Avg_GC_Region.png')
+    plt.savefig(Results_path+'\Charts\Chart2_Avg_GC_Region.png')
 
 
     plt.figure(figsize=(20, 10))
     sns.scatterplot(data=densities_T_melt, x='position', y="density", hue='variable')
 
     plt.xlabel("Position w.r.t TSS")
-    plt.ylabel("Density_GC")
-    plt.title("")
+    plt.ylabel("%GC content")
+    plt.title("%GC content distribution by Region per base position, with average across Region specific Transcripts")
     plt.xticks(rotation=0)
     # plt.show()
-    plt.savefig('GC_Region_density.png')
+    plt.savefig(Results_path+'\Charts\Chart3_GC_Region_density.png')
+
+    end = time.perf_counter()
+    print(f'Finished in {round(end - start, 2)} second(s)')

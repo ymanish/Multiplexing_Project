@@ -7,6 +7,16 @@ import concurrent.futures
 import time
 import matplotlib.pyplot as plt
 
+
+Input_files_region = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Data\osativa\output_fasta"
+Input_files_seq = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Data\osativa\input_fasta"
+
+Results_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa"
+
+Total_Input_Files = 2
+Group = 'Plant' # 'Eukaryote'
+
+
 def sum_columns(s):
     return s.rolling(window=147,  min_periods=1, center=True).sum()
 
@@ -42,8 +52,8 @@ def main(n):
     df_seq = pd.DataFrame()
     COL = [str(i) for i in range(853, 2000)]
 
-    for (seq_record_1, seq_record_2) in zip(SeqIO.parse(r"C:\Users\maya620d\PycharmProjects\Multiplexing\output_fasta\region_human_"+str(n)+".fasta", "fasta"),
-                                            SeqIO.parse(r"C:\Users\maya620d\PycharmProjects\Multiplexing\input_fasta\group_"+str(n)+".fasta", "fasta")):
+    for (seq_record_1, seq_record_2) in zip(SeqIO.parse(Input_files_region+"\/region_group_"+str(n)+".fasta", "fasta"),
+                                            SeqIO.parse(Input_files_seq+"\group_"+str(n)+".fasta", "fasta")):
         #     upstream=seq_record.seq[:1000]
         down_region = seq_record_1.seq[853:2000]
         temp_1 = pd.DataFrame(list(down_region), index=COL)
@@ -69,7 +79,7 @@ if __name__ == "__main__":
     df_D_REGION = pd.DataFrame()
 
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        iter_seq = range(1, 5)
+        iter_seq = range(1, Total_Input_Files)
         pool = [executor.submit(main, n=i) for i in iter_seq]
         for j in concurrent.futures.as_completed(pool):
             # print(f'Return Value: {i.result()}')
@@ -83,8 +93,6 @@ if __name__ == "__main__":
             df_D_SEQ = pd.concat([df_D_SEQ, temp_df_d_seq], axis=0)
             # df_U_SEQ = pd.concat([df_U_SEQ, temp_df_u_seq], axis=0)
 
-    end = time.perf_counter()
-    print(f'Finished in {round(end - start, 2)} second(s)')
 
     with_rep_seq = [0, 1, 1, 0, 0]
 
@@ -114,32 +122,36 @@ if __name__ == "__main__":
     region_density_T_melt.rename({'value': 'density'}, inplace=True, axis=1)
     region_density_T_melt['position'] = region_density_T_melt['position'].astype(int)
 
-    region_density_T_melt.to_csv("GC_density_Element_wise.csv")
 
     region_density_T_melt['position'] = region_density_T_melt['position'] - 1000
+    region_density_T_melt.to_csv(Results_path+"\Files\/NUC_element_GC_density_perbasepos.csv")
+
 
     plt.figure(figsize=(20, 10))
     sns.scatterplot(data=region_density_T_melt, x='position', y='density', hue="variable")
     plt.xlabel("Position w.r.t TSS")
-    plt.ylabel("%GC_content")
-    plt.title("")
+    plt.ylabel("% Nucleosomal GC content")
+    plt.title("%GC content distribution by Region per base position, with average across Region specific Transcripts")
     plt.xticks(rotation=0)
     # plt.show()
-    plt.savefig('GC_density_Element_wise_chart.png')
+    plt.savefig(Results_path+'\Charts\/NUC_Chart3_GC_Region_density.png')
 
     avg_GC_df = pd.DataFrame({'element': ['exon', 'intron', 'UUTR', 'DUTR'],
                               'Avg_GC': [Avg_GC_Exon, Avg_GC_Intron, Avg_GC_UUTR, Avg_GC_DUTR]
                               })
 
-    avg_GC_df.to_csv('Avg_GC_element_density.csv')
+    avg_GC_df.to_csv(Results_path+'\Files\/NUC_Avg_GC_per_element.csv')
 
     plt.figure(figsize=(10, 10))
     sns.barplot(x="element", y="Avg_GC", data=avg_GC_df)
 
     plt.xlabel("Region")
-    plt.ylabel("Avg GC content")
-    plt.title("")
+    plt.ylabel("% Nucleosomal GC content")
+    plt.title("Average GC content per Region")
     # plt.xticks(rotation = 90)
     # plt.xticks(np.arange(-1000, 1000, 50), rotation=45)
     # plt.show()
-    plt.savefig('Avg_GC_Region.png')
+    plt.savefig(Results_path+'\Charts\/NUC_Chart2_Avg_GC_Region.png')
+
+    end = time.perf_counter()
+    print(f'Finished in {round(end - start, 2)} second(s)')
