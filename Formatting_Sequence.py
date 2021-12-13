@@ -228,7 +228,7 @@ def region_sequence(seq, uutr_starts, uutr_stops, dutr_starts, dutr_stops, mexon
 
 def formatting_file(n):
 
-    modified_human_genes_file = open(output_file_path+"\/region_human_" + str(n) + ".fasta", "w")
+    modified_human_genes_file = open(output_file_path+"\/region_group_" + str(n) + ".fasta", "w")
 
     for seq_record in SeqIO.parse(input_file_path+"\group_" + str(n) + ".fasta", "fasta"):
         #     print(seq_record.id)

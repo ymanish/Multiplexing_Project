@@ -30,7 +30,8 @@ def batch_iterator(iterator, batch_size):
             if entry is None:
                 # End of file
                 break
-            batch.append(entry)
+            if len(entry.seq) > 2000:
+                batch.append(entry)
         if batch:
             yield batch
 
