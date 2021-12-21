@@ -18,7 +18,7 @@ Results_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa"
 def main(n):
     df_seq = pd.DataFrame()
 
-    for seq_record in SeqIO.parse(Input_seq_file+"\group_"+str(n)+".fasta", "fasta"):
+    for seq_record in SeqIO.parse(Input_seq_file+"/group_"+str(n)+".fasta", "fasta"):
         header = seq_record.id.split('|')
         if Group == 'Plant':
             print(header[1])
@@ -28,19 +28,16 @@ def main(n):
             TRANSCRIPT_ID = header[2]
 
         sequ = list(seq_record.seq[:2000])
-        print(len(sequ))
         temp_seq = pd.DataFrame(sequ, index=COL)
-    return None
+        temp_seq = temp_seq.T
+        temp_seq['id'] = TRANSCRIPT_ID
+        df_seq = pd.concat([df_seq, temp_seq], axis=0)
 
-    #     temp_seq = temp_seq.T
-    #     temp_seq['id'] = TRANSCRIPT_ID
-    #     df_seq = pd.concat([df_seq, temp_seq], axis=0)
-    #
-    # df_seq = df_seq.replace(["A", "C", "G", "T", "N"], [0, 1, 1, 0, 0])
-    # df_seq.reset_index(inplace=True, drop=True)
-    # df_seq = df_seq.drop('id', axis=1)
-    #
-    # return df_seq.sum(axis=0), len(df_seq)
+    df_seq = df_seq.replace(["A", "C", "G", "T", "N"], [0, 1, 1, 0, 0])
+    df_seq.reset_index(inplace=True, drop=True)
+    df_seq = df_seq.drop('id', axis=1)
+
+    return df_seq.sum(axis=0), len(df_seq)
 
 
 
@@ -81,13 +78,6 @@ if __name__ == "__main__":
     # df_D_REGION = pd.DataFrame()
     len_df = 0
     df = pd.DataFrame()
-
-    for i in range(1, 44):
-        main(i)
-
-    import sys
-    sys.exit()
-
 
     with concurrent.futures.ProcessPoolExecutor() as executor:
         iter_seq = range(1, Total_Input_Files+1)
@@ -143,5 +133,4 @@ if __name__ == "__main__":
 
     end = time.perf_counter()
     print(f'Finished in {round(end - start, 2)} second(s)')
-
 
