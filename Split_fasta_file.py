@@ -1,11 +1,11 @@
 from Bio import SeqIO
-
+from Genome_Signal_Analysis.Initialise_Script import *
 
 ###The input file should be in Fasta format
 
-input_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Ensembles_Data\osativa.fasta"
+# input_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Ensembles_Data\osativa.fasta"
 
-output_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Data\osativa\input_fasta"
+# output_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Data\osativa\input_fasta"
 
 def batch_iterator(iterator, batch_size):
     """Returns lists of length batch_size.
@@ -35,10 +35,10 @@ def batch_iterator(iterator, batch_size):
         if batch:
             yield batch
 
-record_iter = SeqIO.parse(input_path, "fasta")
+record_iter = SeqIO.parse(ENSEMBLE_FILE, "fasta")
 
 for i, batch in enumerate(batch_iterator(record_iter, 1000)):
-    filename = output_path+"\group_%i.fasta" % (i + 1)
+    filename = SEQ_FILE_PATH+"\group_%i.fasta" % (i + 1)
     with open(filename, "w") as handle:
         count = SeqIO.write(batch, handle, "fasta")
     print("Wrote %i records to %s" % (count, filename))

@@ -3,11 +3,12 @@ from Bio import SeqIO
 import copy
 import concurrent.futures
 import time
+from Genome_Signal_Analysis.Initialise_Script import *
 
-input_file_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Data\osativa\input_fasta"
-output_file_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Data\osativa\output_fasta"
-Total_Input_Files = 2
-Group = 'Plant'
+# input_file_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Data\osativa\input_fasta"
+# output_file_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Data\osativa\output_fasta"
+# Total_Input_Files = 2
+# Group = 'Plant'
 # 'Eukaryote'
 
 def genomic_positions_eukaryote(strand, header):
@@ -105,8 +106,6 @@ def genomic_positions_plant(strand, header):
     # CDS_END=[int(i) for i in header[16].split(';')]  #array
 
     return GENE_ID, TRANSCRIPT_ID, FIVE_UTR_START, FIVE_UTR_END, THREE_UTR_START, THREE_UTR_END, EXON_STARTS, EXON_ENDS, TSS, EXON_RANK
-
-
 
 
 def positive_strand_positions(FIVE_UTR_START, FIVE_UTR_END, THREE_UTR_START, THREE_UTR_END, TSS):
@@ -228,11 +227,11 @@ def region_sequence(seq, uutr_starts, uutr_stops, dutr_starts, dutr_stops, mexon
 
 def formatting_file(n):
 
-    modified_human_genes_file = open(output_file_path+"\/region_group_" + str(n) + ".fasta", "w")
+    modified_human_genes_file = open(REGION_FILE_PATH+"\/region_group_" + str(n) + ".fasta", "w")
 
-    for seq_record in SeqIO.parse(input_file_path+"\group_" + str(n) + ".fasta", "fasta"):
+    for seq_record in SeqIO.parse(SEQ_FILE_PATH+"\group_" + str(n) + ".fasta", "fasta"):
         #     print(seq_record.id)
-        if Group == 'Eukaryote':
+        if GROUP == 'Eukaryote':
 
             header = (seq_record.id).split('|')
             print(header[2])
