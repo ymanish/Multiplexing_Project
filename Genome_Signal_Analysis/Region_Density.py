@@ -6,12 +6,13 @@ import seaborn as sns
 import concurrent.futures
 import time
 import matplotlib.pyplot as plt
+from Genome_Signal_Analysis.Initialise_Script import *
 
-
-Input_files = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Data\osativa\output_fasta"
-Results_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa"
-
-Total_Input_Files = 2
+#
+# Input_files = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Data\osativa\output_fasta"
+# Results_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa"
+#
+# Total_Input_Files = 2
 
 def density_array(T_df, to_rep, with_rep):
     exon_den_df = T_df.replace(to_rep, with_rep)
@@ -22,10 +23,11 @@ def spare_matrix(file_number):
 
     df = pd.DataFrame()
 
-    for seq_record in SeqIO.parse(Input_files+"\/region_group_"+str(file_number)+".fasta", "fasta"):
+    for seq_record in SeqIO.parse(REGION_FILE_PATH+"\/region_group_"+str(file_number)+".fasta", "fasta"):
         #     upstream=seq_record.seq[:1000]
-        down_region = seq_record.seq[1000:2000]
-        temp = pd.DataFrame(list(down_region))
+        # down_region = seq_record.seq[1000:2000]
+        region = seq_record.seq[:2000]
+        temp = pd.DataFrame(list(region))
         df = pd.concat([df, temp], axis=1)
 
     trans_df = df.T
@@ -67,16 +69,10 @@ if __name__ == "__main__":
             UUTR_df = pd.concat([UUTR_df, UUTR_temp], axis=1)
             DUTR_df = pd.concat([DUTR_df, DUTR_temp], axis=1)
 
-            #f.write(i.result())
-
-    # f.close()
-    end = time.perf_counter()
-    print(f'Finished in {round(end - start, 2)} second(s)')
-
     # print(exon_df)
-    print(exon_df.shape)
-    print(exon_df)
-    print(exon_df.sum(axis=1))
+    # print(exon_df.shape)
+    # print(exon_df)
+    # print(exon_df.sum(axis=1))
 
     exon_all = exon_df.sum(axis=1)
     intron_all = intron_df.sum(axis=1)
@@ -93,7 +89,6 @@ if __name__ == "__main__":
     UUTR_all_density.drop('length', axis=0, inplace=True)
     DUTR_all_density.drop('length', axis=0, inplace=True)
 
-    x = range(1000)
 
     densities = pd.DataFrame([exon_all_density, intron_all_density, UUTR_all_density, DUTR_all_density],
                              index=['exon', 'intron', 'UUTR', 'DUTR'])
@@ -102,8 +97,10 @@ if __name__ == "__main__":
     densities_T['position'] = densities_T.index
     densities_T_melt = pd.melt(densities_T, id_vars=['position'])
     densities_T_melt.rename({'value': 'density'}, inplace=True, axis=1)
-    densities_T_melt.to_csv(Results_path+"\Files\elements_density.csv")
+    densities_T_melt.to_csv(ELEMENT_DENSITY_FILE)
 
+
+    densities_T_melt['position'] = densities_T_melt['position']-1000
 
     plt.figure(figsize=(20, 10))
     sns.scatterplot(data=densities_T_melt, x='position', y='density', hue="variable")
@@ -112,5 +109,7 @@ if __name__ == "__main__":
     plt.title("Element Density per Base position")
     plt.xticks(rotation=0)
     # plt.show()
-    plt.savefig(Results_path+'\Charts\Chart1_Element_density.png')
+    plt.savefig(ELEMENT_DENSITY_CHART)
 
+    end = time.perf_counter()
+    print(f'Finished in {round(end - start, 2)} second(s)')

@@ -4,19 +4,20 @@ from Bio import SeqIO
 import copy
 import seaborn as sns
 import matplotlib.pyplot as plt
+from Genome_Signal_Analysis.Initialise_Script import *
 
-element_GC_density_perbasepose_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa\Files\element_GC_density_perbasepos.csv"
-element_density_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa\Files\elements_density.csv"
-Avg_GC_per_element_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa\Files\Avg_GC_per_element.csv"
+# element_GC_density_perbasepose_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa\Files\element_GC_density_perbasepos.csv"
+# element_density_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa\Files\elements_density.csv"
+# Avg_GC_per_element_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa\Files\Avg_GC_per_element.csv"
+#
+# Absolute_GC_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa\Files\absolute_gc_content.csv"
+#
+# Results_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa"
 
-Absolute_GC_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa\Files\absolute_gc_content.csv"
 
-Results_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa"
-
-
-Element_GC_content = pd.read_csv(element_GC_density_perbasepose_path)
-Element_density = pd.read_csv(element_density_path)
-Avg_GC_density = pd.read_csv(Avg_GC_per_element_path)
+Element_GC_content = pd.read_csv(GC_PER_REGION_PER_BP_FILE)
+Element_density = pd.read_csv(ELEMENT_DENSITY_FILE)
+Avg_GC_density = pd.read_csv(AVG_GC_PER_REGION_FILE)
 
 Element_GC_content.drop(['Unnamed: 0'], axis=1, inplace=True)
 Element_density.drop(['Unnamed: 0'], axis=1, inplace=True)
@@ -34,7 +35,7 @@ plt.ylabel("%GC content * %Occurrence")
 plt.title("%GC distribution by Region per base position, with Average across ALL the Transcripts")
 plt.xticks(rotation=0)
 # plt.show()
-plt.savefig(Results_path+'\Charts\Chart4_GC_Density_and_element_density.png')
+plt.savefig(ABS_GC_DENSITY_BY_REGION_CHART)
 
 
 absolute_GC = df_GC_Element.groupby('position').agg({'density':sum}).reset_index()
@@ -47,7 +48,7 @@ plt.ylabel("Sum(%GC content * %Occurrence)")
 plt.title("Absolute GC content averaged across ALL transcripts")
 plt.xticks(rotation=0)
 # plt.show()
-plt.savefig(Results_path+'\Charts\Chart6_Derived_Absolute_GC.png')
+plt.savefig(DERIVED_ABSOLUTE_GC_CHART)
 
 
 def multiply_operation(el, density, tab):
@@ -57,7 +58,7 @@ def multiply_operation(el, density, tab):
 Element_density['Homoginized_density_GC'] = Element_density.apply(lambda x: multiply_operation(x['variable'],
                                                                                                x['density'], Avg_GC_density),
                                                                   axis=1)
-Element_density.to_csv(Results_path + '\Files\Temp_Chart_5.csv')
+Element_density.to_csv(AVG_GC_DENSITY_BY_REGION_FILE)
 
 plt.figure(figsize=(20, 10))
 sns.scatterplot(data=Element_density, x='position', y="Homoginized_density_GC", hue='variable')
@@ -67,11 +68,11 @@ plt.ylabel("%GC content * %Occurrence")
 plt.title("Average %GC distribution by Region per base position")
 plt.xticks(rotation=0)
 # plt.show()
-plt.savefig(Results_path+'\Charts\Chart5_Avg_GC_Density_and_element_density.png')
+plt.savefig(AVG_GC_DENSITY_BY_REGION_CHART)
 
 AVG_absolute_GC = Element_density.groupby('position').agg({'Homoginized_density_GC':sum}).reset_index()
 
-AVG_absolute_GC.to_csv(Results_path + '\Files\Temp_Chart_7.csv')
+AVG_absolute_GC.to_csv(DERIVED_AVG_GC_FILE)
 
 plt.figure(figsize=(20, 10))
 sns.scatterplot(data=AVG_absolute_GC, x='position', y="Homoginized_density_GC")
@@ -81,7 +82,7 @@ plt.ylabel("Sum(%GC content * %Occurrence)")
 plt.title("Average %GC distribution per base position")
 plt.xticks(rotation=0)
 # plt.show()
-plt.savefig(Results_path+'\Charts\Chart7_Derived_Avg_Absolute_GC.png')
+plt.savefig(DERIVED_AVG_GC_CHART)
 
 
 
@@ -97,7 +98,7 @@ def create_intra_regional_charts(DF_element_GC_den, DF_Avg_GC_density ):
 
     DF['intra_signal'] = DF['element_GC_density'] - DF['Avg_GC']
 
-    DF.to_csv(Results_path+'\Files\Temp_Chart_8.csv')
+    DF.to_csv(CENTERED_GC_PER_REGION_PER_BP_FILE)
 
     plt.figure(figsize=(20, 10))
     sns.scatterplot(data=DF, x='position', y="intra_signal", hue='element')
@@ -106,13 +107,13 @@ def create_intra_regional_charts(DF_element_GC_den, DF_Avg_GC_density ):
     plt.ylabel("mean-centered %GC")
     plt.title("Mean centered %GC content distribution by Region per base position, with average across Region specific Transcripts")
     plt.xticks(rotation=0)
-    plt.savefig(Results_path + '\Charts\Chart8_Centered_GC_Region_density.png')
+    plt.savefig(CENTERED_GC_PER_REGION_PER_BP_CHART)
 
     # plt.show()
 
 
     DF['intra_signal'] = DF['intra_signal'] * DF['element_density']
-    DF.to_csv(Results_path+'\Files\Temp_Chart_9.csv')
+    DF.to_csv(CENTERED_GC_DENSITY_BY_REGION_FILE)
 
     plt.figure(figsize=(20, 10))
     sns.scatterplot(data=DF, x='position', y="intra_signal", hue='element')
@@ -122,11 +123,11 @@ def create_intra_regional_charts(DF_element_GC_den, DF_Avg_GC_density ):
     plt.title("Mean centered %GC distribution by Region per base position, with Average across ALL the Transcripts")
     plt.xticks(rotation=0)
     # plt.show()
-    plt.savefig(Results_path + '\Charts\Chart9_Centered_GC_density_and element_density.png')
+    plt.savefig(CENTERED_GC_DENSITY_BY_REGION_CHART)
 
     intra_absolute_GC = DF.groupby('position').agg({'intra_signal': sum}).reset_index()
 
-    intra_absolute_GC.to_csv(Results_path+'\Files\Temp_Chart_10.csv')
+    intra_absolute_GC.to_csv(DERIVED_CENTERED_GC_FILE)
 
     plt.figure(figsize=(20, 10))
     sns.scatterplot(data=intra_absolute_GC, x='position', y="intra_signal")
@@ -136,14 +137,14 @@ def create_intra_regional_charts(DF_element_GC_den, DF_Avg_GC_density ):
     plt.title("Mean Centered Absolute %GC content averaged across ALL transcripts")
     plt.xticks(rotation=0)
     # plt.show()
-    plt.savefig(Results_path + '\Charts\Chart10_Centered_Derived_Absolute_GC.png')
+    plt.savefig(DERIVED_CENTERED_GC_CHART)
 
     DF['inter_signal'] = DF['Avg_GC'] * DF['element_density']
     return DF
 
 
 DF_intra = create_intra_regional_charts(df_GC_Element, Avg_GC_density)
-absolute_GC_file = pd.read_csv(Absolute_GC_path)
+absolute_GC_file = pd.read_csv(ABSOLUTE_GC_FILE)
 
 
 absolute_GC_file.drop(['Unnamed: 0'], axis=1, inplace=True)
@@ -175,4 +176,4 @@ plt.ylabel("%GC")
 plt.title("Comparison of Derived GC and Absolute GC")
 plt.xticks(rotation=0)
 # plt.show()
-plt.savefig(Results_path + '\Charts\Chart11_Derived_and_Absolute_GC.png')
+plt.savefig(COMPARISON_DERIVED_ABS_GC)
