@@ -1,14 +1,19 @@
-SPECIES_NAME = 'osativa'
-GROUP = 'Plant' #'Eukaryote'
+SPECIES_NAME = 'osativa' ###'osativa' or 'h_sapiens
+GROUP = 'Plant' #'Eukaryote' or 'Plant'
 
 Total_Input_Files = 2
 COL = [str(i) for i in range(2000)]
+SEQ_TYPE = 'mRNA_TSC' ### pre-mRNA or mRNA_TSC or mRNA
+NUCLEOSOMAL = False
+
 
 ENSEMBLE_FILE = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Ensembles_Data\/" + SPECIES_NAME + ".fasta"
-
 DATA_DIR = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Data\/" + SPECIES_NAME
-RESULT_DIR = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\/" + SPECIES_NAME
 
+if NUCLEOSOMAL:
+    RESULT_DIR = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\/" + SPECIES_NAME + r'\NUCLO\/' + SEQ_TYPE
+else:
+    RESULT_DIR = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\/" + SPECIES_NAME + r'\/' + SEQ_TYPE
 
 REGION_FILE_PATH = DATA_DIR + "\output_fasta"
 SEQ_FILE_PATH = DATA_DIR + "\input_fasta"

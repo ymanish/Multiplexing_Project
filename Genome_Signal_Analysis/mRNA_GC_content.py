@@ -151,11 +151,21 @@ def main(n):
     df_region = pd.DataFrame()
 
     for seq_record in SeqIO.parse(REGION_FILE_PATH+"/mrna_group_"+str(n)+".fasta", "fasta"):
-        header = seq_record.id
+        header = seq_record.id.split('|')
+        # print(header)
         TRANSCRIPT_ID = header[0]
-        region_seq = list(seq_record.seq.split('|')[0][:2000])
-        mrna_seq = list(seq_record.seq.split('|')[1][:2000])
-        # print (mrna_seq)
+        print (TRANSCRIPT_ID)
+        uutr_len =int(header[1])
+        exon_len =int(header[2])
+        dutr_len =int(header[3])
+
+        if SEQ_TYPE=='mRNA_TSC':
+            region_seq = list(seq_record.seq.split('|')[0][uutr_len-1000:uutr_len+1000])
+            mrna_seq = list(seq_record.seq.split('|')[1][uutr_len-1000:uutr_len+1000])
+        else:
+            region_seq = list(seq_record.seq.split('|')[0][:2000])
+            mrna_seq = list(seq_record.seq.split('|')[1][:2000])
+
         temp_seq = pd.DataFrame(mrna_seq, index=COL)
         temp_seq = temp_seq.T
         temp_seq['id'] = TRANSCRIPT_ID

@@ -46,28 +46,41 @@ def generate_mrna_region(header, region_sequ, gene_sequ):
     new_region = region_sequ[:1000]
     mrna_seq = gene_sequ[:1000]
 
+
+    UUTR_len = 1000
     if len(UUTR_loc_start) > 0:
+
         for s, e in zip(UUTR_loc_start, UUTR_loc_stop):
             new_region = new_region + region_sequ[int(s):int(e)]
             mrna_seq = mrna_seq + gene_sequ[int(s):int(e)]
+            UUTR_len = UUTR_len + (int(e)-int(s))
 
+
+    exon_len = UUTR_len
     if len(exon_loc_start) > 0:
 
         for s, e in zip(exon_loc_start, exon_loc_stop):
             new_region = new_region + region_sequ[int(s):int(e)]
             mrna_seq = mrna_seq + gene_sequ[int(s):int(e)]
+            # print(int(e) - int(s))
+            exon_len = exon_len + (int(e) - int(s))
+
+
+    DUTR_len = exon_len
 
     if len(DUTR_loc_start) > 0:
         for s, e in zip(DUTR_loc_start, DUTR_loc_stop):
             new_region = new_region + region_sequ[int(s):int(e)]
             mrna_seq = mrna_seq + gene_sequ[int(s):int(e)]
+            # print(int(e) - int(s))
+            DUTR_len = DUTR_len + (int(e) - int(s))
 
-    # print(len(new_region))
-    # print(len(mrna_seq))
+
     mrna_seq = mrna_seq + gene_sequ[len(gene_sequ)-1000:]
     new_region = new_region + region_sequ[len(region_sequ)-1000:]
 
-    return new_region, mrna_seq, ID
+    new_header = str(UUTR_len) + '|'+ str(exon_len)+ '|'+str(DUTR_len)
+    return new_region, mrna_seq, ID, new_header
 
 def main(n):
 
@@ -80,10 +93,10 @@ def main(n):
         region_header = seq_record_1.id
         region = seq_record_1.seq
         sequence = seq_record_2.seq
-        new_region, new_seq, id = generate_mrna_region(region_header, region, sequence)
+        new_region, new_seq, id, n_header = generate_mrna_region(region_header, region, sequence)
         print(id)
 
-        mrna_file.write(">" + id + "\n")
+        mrna_file.write(">" + id + '|' + n_header + "\n")
         mrna_file.write(str(new_region)+'|'+str(new_seq) + "\n")
 
     mrna_file.close()
