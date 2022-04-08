@@ -1,0 +1,80 @@
+#!/bin/bash
+# ----------------SLURM Parameters----------------
+#SBATCH -p all.q
+#SBATCH -n 50
+#SBATCH --mem-per-cpu=7G
+#SBATCH -N 1
+#SBATCH --mail-type=ALL
+#SBATCH -J GC_profiling
+#SBATCH -D /home/pol_schiessel/maya620d/Genome_Signal_Analysis/GC_Profiling
+#SBATCH --output=Array_eukaryote.%A_%a.out
+#SBATCH --error=Array_eukaryote.%A_%a.error
+#SBATCH -A undefined
+#SBATCH --array=1-20%3 
+### Submit 2 tasks with task ID 1,2. Run max 2 tasks concurrently
+# ----------------Load Modules--------------------
+module load apps/biopython/1.79
+module load apps/python3/3.9.5
+
+#------------------Get Arguments and Create Directory--------
+### org_list.txt contains 1000 lines with 2 arguments per line.
+###    Line <i> contains arguments for run <i>
+param_store=org_list.txt
+seq_type='pre_mRNA'
+
+# Get first argument
+species_num=$(cat $param_store | awk -F ',' -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $1}')
+# Get second argument
+species=$(cat $param_store | awk -F ',' -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $2}')
+echo $species_num
+echo $species
+echo $param_store
+echo $seq_type
+
+# ----------------Commands------------------------
+echo Downloading the $species Ensembl Data
+wget -O /group/pol_schiessel/05_Projekte/manish/Multiplexing/Ensembles_Data/$species.fasta 'http://www.ensembl.org/biomart/martservice?query=<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Query><Query  virtualSchemaName = "default" formatter = "FASTA" header = "0" uniqueRows = "0" count = "" datasetConfigVersion = "0.6" ><Dataset name = "'$species'" interface = "default" ><Filter name = "upstream_flank" value = "1000"/><Filter name = "downstream_flank" value = "1000"/><Filter name = "transcript_biotype" value = "protein_coding"/><Attribute name = "ensembl_gene_id" /><Attribute name = "ensembl_gene_id_version" /><Attribute name = "ensembl_transcript_id" /><Attribute name = "ensembl_transcript_id_version" /><Attribute name = "transcript_exon_intron" /><Attribute name = "5_utr_start" /><Attribute name = "5_utr_end" /><Attribute name = "3_utr_start" /><Attribute name = "3_utr_end" /><Attribute name = "exon_chrom_start" /><Attribute name = "exon_chrom_end" /><Attribute name = "transcription_start_site" /><Attribute name = "strand" /><Attribute name = "rank" /><Attribute name = "chromosome_name" /></Dataset></Query>' &&
+echo Saved the $species Ensemble Data &&
+
+echo Create directory for $species fasta file spliting &&
+# mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Data/$species &&
+mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Data/$species/region_dir &&
+mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Data/$species/seq_dir &&
+python3 Split_fasta_file.py $species &&
+echo Splited the $species Ensemble Data &&
+
+rm /group/pol_schiessel/05_Projekte/manish/Multiplexing/Ensembles_Data/$species.fasta &&
+
+python3 Generate_Region_Seq.py $species &&
+echo Region generated for $species Data &&
+
+echo Create directory for $species Results &&
+# mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Results/$species &&
+# mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Results/$species/NUCLO &&
+ 
+# mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Results/$species/$seq_type &&
+# mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Results/$species/NUCLO/$seq_type &&
+
+mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Results/$species/$seq_type/Files &&
+mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Results/$species/$seq_type/Charts &&
+mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Results/$species/$seq_type/SEL_CHARTS &&
+
+mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Results/$species/NUCLO/$seq_type/Files &&
+mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Results/$species/NUCLO/$seq_type/Charts &&
+mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Results/$species/NUCLO/$seq_type/SEL_CHARTS &&
+
+
+python3 Absolute_GC_content.py $species &&
+echo Absolute_GC_content done for $species Data &&
+
+python3 Region_Density.py $species &&
+echo Region_Density done for $species Data &&
+
+python3 Regional_GC_content.py $species &&
+echo Regional_GC_content done for $species Data &&
+
+python3 Combine_Charts.py $species &&
+echo Combine_Charts done for $species Data &&
+
+rm -r /group/pol_schiessel/05_Projekte/manish/Multiplexing/Data/$species/region_dir &&
+rm -r /group/pol_schiessel/05_Projekte/manish/Multiplexing/Data/$species/seq_dir
