@@ -1,20 +1,12 @@
 import pandas as pd
 import numpy as np
 from Bio import SeqIO
-import copy
 import seaborn as sns
 import concurrent.futures
 import time
 import matplotlib.pyplot as plt
-from Genome_Signal_Analysis.Initialise_Script import *
+from Initialise_GC_profiling import *
 
-# Group = 'Plant' # 'Eukaryote'
-# Total_Input_Files = 3
-#
-# COL = [str(i) for i in range(2000)]
-#
-# Input_seq_file = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Data\osativa\input_fasta"
-# Results_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa"
 
 def main(n):
     df_seq = pd.DataFrame()
@@ -22,10 +14,10 @@ def main(n):
     for seq_record in SeqIO.parse(SEQ_FILE_PATH+"/group_"+str(n)+".fasta", "fasta"):
         header = seq_record.id.split('|')
         if GROUP == 'Plant':
-            print(header[1])
+            # print(header[1])
             TRANSCRIPT_ID = header[1]
         else:
-            print(header[2])
+            # print(header[2])
             TRANSCRIPT_ID = header[2]
 
         sequ = list(seq_record.seq[:2000])
@@ -45,6 +37,8 @@ if __name__ == "__main__":
     len_df = 0
     df = pd.DataFrame()
 
+    print ('Generate Absolute GC content.............')
+
     with concurrent.futures.ProcessPoolExecutor() as executor:
         iter_seq = range(1, Total_Input_Files+1)
         pool = [executor.submit(main, n=i) for i in iter_seq]
@@ -53,24 +47,33 @@ if __name__ == "__main__":
             df_temp, temp_len_df = j.result()
             len_df = len_df + temp_len_df
             df = pd.concat([df, df_temp], axis=1)  ##Output is Series so we have to concatenate the Series horizontally
-            print(df.shape)
 
     df = df.reset_index(drop=True)
-    print(df.head(3))
-    print(len_df)
     absolute_gc = df.sum(axis=1) / len_df
     absolute_gc.to_csv(ABSOLUTE_GC_FILE)
 
     plt.figure(figsize=(20, 10))
     sns.scatterplot(x=range(-1000, 1000), y=absolute_gc)
-
     plt.xlabel("Position w.r.t TSS")
     plt.ylabel("%GC content")
-    plt.title("GC content per Base position")
-    # plt.xticks(rotation = 90)
+    plt.title("GC content per base position")
     plt.xticks(np.arange(-1000, 1000, 50), rotation=45)
-    # plt.show()
     plt.savefig(ABSOLUTE_GC_CHART)
+    # plt.show()
+
+    print ('Generate Nucleosomal Absolute GC content.............')
+    Nucleosomal_GC_content = absolute_gc.rolling(window=147,  min_periods=1, center=True).mean()
+
+    Nucleosomal_GC_content.to_csv(NUCLO_ABSOLUTE_GC_FILE)
+
+    plt.figure(figsize=(20, 10))
+    sns.scatterplot(x=range(-1000, 1000), y=Nucleosomal_GC_content)
+    plt.xlabel("Position w.r.t TSS")
+    plt.ylabel("Nucleosomal GC content")
+    plt.title("GC content per base position")
+    plt.xticks(np.arange(-1000, 1000, 50), rotation=45)
+    plt.savefig(NUCLO_ABSOLUTE_GC_CHART)
+    # plt.show()
 
     end = time.perf_counter()
     print(f'Finished in {round(end - start, 2)} second(s)')

@@ -6,13 +6,8 @@ import seaborn as sns
 import concurrent.futures
 import time
 import matplotlib.pyplot as plt
-from Genome_Signal_Analysis.Initialise_Script import *
+from Initialise_GC_profiling import *
 
-#
-# Input_files = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Data\osativa\output_fasta"
-# Results_path = r"C:\Users\maya620d\PycharmProjects\Multiplexing\Results\osativa"
-#
-# Total_Input_Files = 2
 
 def density_array(T_df, to_rep, with_rep):
     exon_den_df = T_df.replace(to_rep, with_rep)
@@ -24,8 +19,6 @@ def spare_matrix(file_number):
     df = pd.DataFrame()
 
     for seq_record in SeqIO.parse(REGION_FILE_PATH+"\/region_group_"+str(file_number)+".fasta", "fasta"):
-        #     upstream=seq_record.seq[:1000]
-        # down_region = seq_record.seq[1000:2000]
         region = seq_record.seq[:2000]
         temp = pd.DataFrame(list(region))
         df = pd.concat([df, temp], axis=1)
@@ -36,7 +29,7 @@ def spare_matrix(file_number):
     total_trans = trans_df.shape[0]
 
     exon_density = density_array(trans_df, to_rep, [0, 1, 0, 0, 0, 0])
-    intron_density = density_array(trans_df, to_rep, [0, 0, 0, 1, 1, 1])
+    intron_density = density_array(trans_df, to_rep, [0, 0, 0, 1, 0, 0])
     UUTR_density = density_array(trans_df, to_rep, [1, 0, 0, 0, 0, 0])
     DUTR_density = density_array(trans_df, to_rep, [0, 0, 1, 0, 0, 0])
 
@@ -57,22 +50,18 @@ if __name__ == "__main__":
     UUTR_df = pd.DataFrame()
     DUTR_df = pd.DataFrame()
 
+    print('Generate the Region  Density........')
+
     with concurrent.futures.ProcessPoolExecutor() as executor:
         iter_seq = range(1, Total_Input_Files+1)
         pool = [executor.submit(spare_matrix, file_number=i) for i in iter_seq]
         for j in concurrent.futures.as_completed(pool):
-            #print(f'Return Value: {j.result()}')
             exon_temp, intron_temp, UUTR_temp, DUTR_temp = j.result()
 
             exon_df = pd.concat([exon_df, exon_temp], axis=1)
             intron_df = pd.concat([intron_df, intron_temp], axis=1)
             UUTR_df = pd.concat([UUTR_df, UUTR_temp], axis=1)
             DUTR_df = pd.concat([DUTR_df, DUTR_temp], axis=1)
-
-    # print(exon_df)
-    # print(exon_df.shape)
-    # print(exon_df)
-    # print(exon_df.sum(axis=1))
 
     exon_all = exon_df.sum(axis=1)
     intron_all = intron_df.sum(axis=1)
@@ -97,10 +86,9 @@ if __name__ == "__main__":
     densities_T['position'] = densities_T.index
     densities_T_melt = pd.melt(densities_T, id_vars=['position'])
     densities_T_melt.rename({'value': 'density'}, inplace=True, axis=1)
+    densities_T_melt['position'] = densities_T_melt['position']-1000
     densities_T_melt.to_csv(ELEMENT_DENSITY_FILE)
 
-
-    densities_T_melt['position'] = densities_T_melt['position']-1000
 
     plt.figure(figsize=(20, 10))
     sns.scatterplot(data=densities_T_melt, x='position', y='density', hue="variable")
@@ -110,6 +98,29 @@ if __name__ == "__main__":
     plt.xticks(rotation=0)
     # plt.show()
     plt.savefig(ELEMENT_DENSITY_CHART)
+
+    print('Generate the Rolling Region Density........')
+    for k in ['exon', 'intron', 'UUTR', 'DUTR']:
+
+        densities_T[k] = densities_T[k].rolling(window=147,
+                                                               min_periods=1,
+                                                               center=True).mean()
+
+    densities_T_melt_rolling = pd.melt(densities_T, id_vars=['position'])
+    densities_T_melt_rolling.rename({'value': 'density'}, inplace=True, axis=1)
+    densities_T_melt_rolling['position'] = densities_T_melt_rolling['position'] - 1000
+    densities_T_melt_rolling.to_csv(NUCLO_ELEMENT_DENSITY_FILE)
+
+
+    plt.figure(figsize=(20, 10))
+    sns.scatterplot(data=densities_T_melt_rolling, x='position', y='density', hue="variable")
+    plt.xlabel("Position w.r.t TSS")
+    plt.ylabel("%Rolling_Occurrence")
+    plt.title("Element Density per Base position")
+    plt.xticks(rotation=0)
+    # plt.show()
+    plt.savefig(NUCLO_ELEMENT_DENSITY_CHART)
+
 
     end = time.perf_counter()
     print(f'Finished in {round(end - start, 2)} second(s)')
