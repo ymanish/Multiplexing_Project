@@ -44,9 +44,12 @@ def main(n):
     df_seq_intron, intron_bases = Region_Seq_multipliction(df_region, [0, 0, 0, 1, 0, 0], df_seq)
     df_seq_UUTR, UUTR_bases = Region_Seq_multipliction(df_region, [1, 0, 0, 0, 0, 0], df_seq)
     df_seq_DUTR, DUTR_bases = Region_Seq_multipliction(df_region, [0, 0, 1, 0, 0, 0], df_seq)
+    df_seq_UF, UF_bases = Region_Seq_multipliction(df_region, [0, 0, 0, 0, 1, 0], df_seq)
+    df_seq_DF, DF_bases = Region_Seq_multipliction(df_region, [0, 0, 0, 0, 0, 1], df_seq)
 
-    return df_seq, df_region, df_seq_exon, df_seq_intron, df_seq_UUTR, df_seq_DUTR, \
-           exon_bases, intron_bases, UUTR_bases, DUTR_bases
+    return df_seq, df_region, df_seq_exon, df_seq_intron, df_seq_UUTR, df_seq_DUTR, df_seq_UF, df_seq_DF,\
+           exon_bases, intron_bases, UUTR_bases, DUTR_bases, UF_bases, DF_bases, len(df_seq)
+
 
 def Region_Seq_multipliction(DF_region, region_code, DF_seq):
     df_region_matrix = DF_region.replace(["U", "E", "D", "I", "F", "f"], region_code)
@@ -54,10 +57,10 @@ def Region_Seq_multipliction(DF_region, region_code, DF_seq):
     print('Region dataframe size: {} and Sequence dataframe size: {}'.format(DF_region.shape, DF_seq.shape))
     if DF_region.shape[0] != DF_seq.shape[0]:
         print('Warning, Region and Seq does not match')
-    DF_seq = DF_seq.replace(["A", "C", "G", "T", "N"], [0, 1, 1, 0, 0])
+    DF_seq = DF_seq.replace(["A", "C", "G", "T", "N", "S"], [0, 1, 1, 0, 0, 1])
+    DF_seq = DF_seq.replace('[A-Z]', 0, regex=True)
     df_seq_region = df_region_matrix.multiply(DF_seq)
-    total_region_bases = df_region_matrix.to_numpy().sum()
-
+    total_region_bases = df_region_matrix.sum(axis=0).sum()
     return df_seq_region, total_region_bases
 
 
@@ -67,7 +70,7 @@ def density_GC_Region_and_Avg(df_region, region_code, df_seq):
     print('Region dataframe size: {} and Sequence dataframe size: {}'.format(df_region.shape, df_seq.shape))
     if df_region.shape[0] != df_seq.shape[0]:
         print('Warning, Region and Seq does not match')
-    df_seq = df_seq.replace(["A", "C", "G", "T", "N"], [0, 1, 1, 0, 0])
+    df_seq = df_seq.replace(["A", "C", "G", "T", "N", "S"], [0, 1, 1, 0, 0, 1])
     df_seq_region = df_region_matrix.multiply(df_seq)
 
     region_GC_per_pos = df_seq_region.sum(axis=0)  # Total GC bases in the region per position
@@ -93,21 +96,24 @@ if __name__ == "__main__":
     df_INTRON = pd.DataFrame()
     df_UUTR = pd.DataFrame()
     df_DUTR = pd.DataFrame()
+    df_UF = pd.DataFrame()
+    df_DF = pd.DataFrame()
 
     Total_Exon_bases = 0
     Total_Intron_bases = 0
     Total_UUTR_bases = 0
     Total_DUTR_bases = 0
-
+    Total_UF_bases = 0
+    Total_DF_bases = 0
+    total_records = 0
     print('Reading the Sequence and Region files........')
     with concurrent.futures.ProcessPoolExecutor() as executor:
         iter_seq = range(1, Total_Input_Files+1)
         pool = [executor.submit(main, n=i) for i in iter_seq]
         for j in concurrent.futures.as_completed(pool):
             # print(f'Return Value: {i.result()}')
-            temp_df_seq, temp_df_region, temp_df_exon, temp_df_intron, temp_df_UUTR, temp_df_DUTR, \
-            Temp_Exon_bases, Temp_Intron_bases,  Temp_UUTR_bases, Temp_DUTR_bases = j.result()
-
+            temp_df_seq, temp_df_region, temp_df_exon, temp_df_intron, temp_df_UUTR, temp_df_DUTR, temp_df_UF, temp_df_DF,\
+            Temp_Exon_bases, Temp_Intron_bases, Temp_UUTR_bases, Temp_DUTR_bases, Temp_UF_bases, Temp_DF_bases, rec = j.result()
             print('File Reading: Region dataframe size: {} and Sequence dataframe size: {}'.format(temp_df_region.shape, temp_df_seq.shape))
             if temp_df_region.shape[0] != temp_df_seq.shape[0]:
                 print('Warning, Region and Seq does not match during File Reading for file {}'.format(j))
@@ -119,11 +125,17 @@ if __name__ == "__main__":
             df_INTRON = pd.concat([df_INTRON, temp_df_intron], axis=0)
             df_UUTR = pd.concat([df_UUTR, temp_df_UUTR], axis=0)
             df_DUTR = pd.concat([df_DUTR, temp_df_DUTR], axis=0)
+            df_UF = pd.concat([df_UF, temp_df_UF], axis=0)
+            df_DF = pd.concat([df_DF, temp_df_DF], axis=0)
 
             Total_Exon_bases = Total_Exon_bases + Temp_Exon_bases
             Total_Intron_bases = Total_Intron_bases + Temp_Intron_bases
             Total_UUTR_bases = Total_UUTR_bases + Temp_UUTR_bases
             Total_DUTR_bases = Total_DUTR_bases + Temp_DUTR_bases
+            Total_UF_bases = Total_UF_bases + Temp_UF_bases
+            Total_DF_bases = Total_DF_bases + Temp_DF_bases
+
+            total_records = total_records + rec
 
     df_REGION.reset_index(inplace=True, drop=True)
     # df_SEQ_T.reset_index(inplace=True, drop=True)
@@ -133,19 +145,25 @@ if __name__ == "__main__":
     df_INTRON.reset_index(inplace=True, drop=True)
     df_UUTR.reset_index(inplace=True, drop=True)
     df_DUTR.reset_index(inplace=True, drop=True)
+    df_UF.reset_index(inplace=True, drop=True)
+    df_DF.reset_index(inplace=True, drop=True)
 
-    density_exon_GC = df_EXON.mean(axis=0)
-    density_intron_GC = df_INTRON.mean(axis=0)
-    density_UUTR_GC = df_UUTR.mean(axis=0)
-    density_DUTR_GC = df_DUTR.mean(axis=0)
+    density_exon_GC = df_EXON.sum(axis=0)/total_records
+    density_intron_GC = df_INTRON.sum(axis=0)/total_records
+    density_UUTR_GC = df_UUTR.sum(axis=0)/total_records
+    density_DUTR_GC = df_DUTR.sum(axis=0)/total_records
+    density_UF_GC = df_UF.sum(axis=0)/total_records
+    density_DF_GC = df_DF.sum(axis=0)/total_records
 
     print("INTRA-REGIONAL SIGNAL CHARTS AND FILES >>>>>>>>>>>>>>>>>>>")
+    region_density_df = pd.read_csv(ELEMENT_DENSITY_FILE)
+    region_density_df.drop(['Unnamed: 0'], axis=1, inplace=True)
+    region_density_df.rename(columns={'density' : 'region_density'}, inplace=True)
 
+    print('(INTRA_SIGNAL-NOT_CENTERED) Calculating the Region Specific GC content per base pair average across ALL transcripts')
 
-    print('Calculating the Region Specific GC content per base pair average across ALL transcripts......')
-
-    densities = pd.DataFrame([density_exon_GC, density_intron_GC, density_UUTR_GC, density_DUTR_GC],
-                             index=['exon', 'intron', 'UUTR', 'DUTR'])
+    densities = pd.DataFrame([density_exon_GC, density_intron_GC, density_UUTR_GC, density_DUTR_GC, density_UF_GC, density_DF_GC],
+                             index=['exon', 'intron', 'UUTR', 'DUTR', 'UF', 'DF'])
 
     densities_T = densities.T
     densities_T['position'] = densities_T.index
@@ -154,7 +172,6 @@ if __name__ == "__main__":
     densities_T_melt['position'] = densities_T_melt['position'].astype(int)
     densities_T_melt['position'] = densities_T_melt['position'] - 1000
     densities_T_melt.to_csv(GC_PER_REGION_PER_BP_ALL_TRANS_FILE)
-
 
     plt.figure(figsize=(20, 10))
     sns.scatterplot(data=densities_T_melt, x='position', y="density", hue='variable')
@@ -165,8 +182,28 @@ if __name__ == "__main__":
     plt.savefig(GC_PER_REGION_PER_BP_ALL_TRANS_CHART)
 
 
+    print('(INTRA_SIGNAL-CENTERED) Mean Centered GC content Calculation for Region Specific GC content per base pair average across all transcripts......')
 
-    print('Calculating the Cumulative GC content from the "Region Specific GC content average across all transcripts"......')
+    centered_densities_T_melt = copy.deepcopy(densities_T_melt)
+    mean_centered_dict_all = centered_densities_T_melt.groupby('variable')['density'].mean().to_dict()
+    print(mean_centered_dict_all)
+    for e in mean_centered_dict_all.keys():
+        centered_densities_T_melt.loc[centered_densities_T_melt['variable'] == e, 'density'] = \
+            centered_densities_T_melt.loc[centered_densities_T_melt['variable'] == e, 'density'] - mean_centered_dict_all[e]
+
+    centered_densities_T_melt.to_csv(CENTERED_GC_DENSITY_BY_REGION_FILE)
+
+    plt.figure(figsize=(20, 10))
+    sns.scatterplot(data=centered_densities_T_melt, x='position', y="density", hue='variable')
+    plt.xlabel("Position w.r.t TSS")
+    plt.ylabel("GC content")
+    plt.title("Mean Centered GC content distribution by Region per base position, with average across ALL Transcripts")
+    plt.xticks(rotation=0)
+    plt.savefig(CENTERED_GC_DENSITY_BY_REGION_CHART)
+
+
+
+    print('(CUMULATIVE-INTRA_SIGNAL-NOT_CENTERED) Calculating the Cumulative GC content from the "Region Specific GC content average across all transcripts"...')
 
     absolute_GC = densities_T_melt.groupby('position').agg({'density': sum}).reset_index()
     absolute_GC.to_csv(DERIVED_ABSOLUTE_GC_FILE)
@@ -179,13 +216,24 @@ if __name__ == "__main__":
     plt.xticks(rotation=0)
     plt.savefig(DERIVED_ABSOLUTE_GC_CHART)
 
+    print('(CUMULATIVE-INTRA_SIGNAL-CENTERED) Calculating the Cumulative MEAN CENTERED GC content from the "Region Specific GC content average across all transcripts"......')
+
+    centered_densities_T_melt = centered_densities_T_melt.groupby('position').agg(
+        {'density': sum}).reset_index()
+    centered_densities_T_melt.to_csv(DERIVED_CENTERED_GC_FILE)
+
+    plt.figure(figsize=(20, 10))
+    sns.scatterplot(data=centered_densities_T_melt, x='position', y="density")
+    plt.xlabel("Position w.r.t TSS")
+    plt.ylabel("Mean Centered GC content")
+    plt.title("Absolute Mean Centered GC content averaged across ALL transcripts")
+    plt.xticks(rotation=0)
+    plt.savefig(DERIVED_CENTERED_GC_CHART)
 
 
-    print ('Calculating the GC content per Region per bp, average across region specific transcript........')
 
-    region_density_df = pd.read_csv(ELEMENT_DENSITY_FILE)
-    region_density_df.drop(['Unnamed: 0'], axis=1, inplace=True)
-    region_density_df.rename(columns={'density' : 'region_density'}, inplace=True)
+
+    print ('(NORMALISED-INTRA_SIGNAL-NOT_CENTERED) Calculating the GC content per Region per bp, average across region specific transcript........')
 
     GC_per_region_per_bp = densities_T_melt.merge(region_density_df,
                                                    on=['position', 'variable'],
@@ -205,7 +253,7 @@ if __name__ == "__main__":
 
 
 
-    print ('Calculating the MEAN CENTERED GC content per Region per bp, average across region specific transcript........')
+    print ('(NORMALISED-INTRA_SIGNAL-CENTERED) Calculating the MEAN CENTERED GC content per Region per bp, average across region specific transcript........')
 
     GC_per_region_per_bp_centered = copy.deepcopy(GC_per_region_per_bp)
     mean_centered_dict = GC_per_region_per_bp_centered.groupby('variable')['density_per_region'].mean().to_dict()
@@ -226,50 +274,20 @@ if __name__ == "__main__":
 
 
 
-    print('Mean Centered GC content Calculation for Region Specific GC content per base pair average across all transcripts......')
-
-    mean_centered_GC_per_region_mul_denstiy = GC_per_region_per_bp_centered.merge(region_density_df,
-                                                   on=['position', 'variable'],
-                                                   how='left')
-
-    mean_centered_GC_per_region_mul_denstiy['density'] = mean_centered_GC_per_region_mul_denstiy['density_per_region']*mean_centered_GC_per_region_mul_denstiy['region_density']
-    mean_centered_GC_per_region_mul_denstiy.drop(['region_density', 'density_per_region'], axis=1, inplace=True)
-    mean_centered_GC_per_region_mul_denstiy.to_csv(CENTERED_GC_DENSITY_BY_REGION_FILE)
-
-    plt.figure(figsize=(20, 10))
-    sns.scatterplot(data=mean_centered_GC_per_region_mul_denstiy, x='position', y="density", hue='variable')
-    plt.xlabel("Position w.r.t TSS")
-    plt.ylabel("GC content")
-    plt.title("Mean Centered GC content distribution by Region per base position, with average across ALL Transcripts")
-    plt.xticks(rotation=0)
-    plt.savefig(CENTERED_GC_DENSITY_BY_REGION_CHART)
-
-
-    print('Calculating the Cumulative MEAN CENTERED GC content from the "Region Specific GC content average across all transcripts"......')
-
-    densities_T_melt_centered_ = mean_centered_GC_per_region_mul_denstiy.groupby('position').agg({'density': sum}).reset_index()
-    densities_T_melt_centered_.to_csv(DERIVED_CENTERED_GC_FILE)
-
-    plt.figure(figsize=(20, 10))
-    sns.scatterplot(data=densities_T_melt_centered_, x='position', y="density")
-    plt.xlabel("Position w.r.t TSS")
-    plt.ylabel("Mean Centered GC content")
-    plt.title("Absolute Mean Centered GC content averaged across ALL transcripts")
-    plt.xticks(rotation=0)
-    plt.savefig(DERIVED_CENTERED_GC_CHART)
-
-
     print("INTER-REGIONAL SIGNAL CHARTS AND FILES >>>>>>>>>>>>>>>>>>>")
 
 
     print ('Calculating the Avg GC content in each Region........')
 
-    avg_exon_GC = df_EXON.to_numpy().sum()/Total_Exon_bases
-    avg_intron_GC = df_INTRON.to_numpy().sum()/Total_Intron_bases
-    avg_UUTR_GC = df_UUTR.to_numpy().sum()/Total_UUTR_bases
-    avg_DUTR_GC = df_DUTR.to_numpy().sum()/Total_DUTR_bases
-    avg_GC_df = pd.DataFrame({'element': ['exon', 'intron', 'UUTR', 'DUTR'],
-                              'Avg_GC': [avg_exon_GC, avg_intron_GC, avg_UUTR_GC, avg_DUTR_GC]
+    avg_exon_GC = df_EXON.sum(axis=0).sum()/Total_Exon_bases
+    avg_intron_GC = df_INTRON.sum(axis=0).sum()/Total_Intron_bases
+    avg_UUTR_GC = df_UUTR.sum(axis=0).sum()/Total_UUTR_bases
+    avg_DUTR_GC = df_DUTR.sum(axis=0).sum()/Total_DUTR_bases
+    avg_UF_GC = df_UF.sum(axis=0).sum()/Total_UF_bases
+    avg_DF_GC = df_DF.sum(axis=0).sum()/Total_DF_bases
+
+    avg_GC_df = pd.DataFrame({'element': ['exon', 'intron', 'UUTR', 'DUTR', 'UF', 'DF'],
+                              'Avg_GC': [avg_exon_GC, avg_intron_GC, avg_UUTR_GC, avg_DUTR_GC, avg_UF_GC, avg_DF_GC]
                               })
 
     avg_GC_df.to_csv(AVG_GC_PER_REGION_FILE)
@@ -319,7 +337,7 @@ if __name__ == "__main__":
 
     print('The NUCLEOSOMAL Calculation for Region Specific GC content average across all transcripts............')
 
-    for k in ['exon', 'intron', 'UUTR', 'DUTR']:
+    for k in ['exon', 'intron', 'UUTR', 'DUTR', 'UF', 'DF']:
         densities_T[k] = densities_T[k].rolling(window=147,
                                                 min_periods=1,
                                                 center=True).mean()

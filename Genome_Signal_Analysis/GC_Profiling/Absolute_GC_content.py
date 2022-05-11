@@ -26,7 +26,8 @@ def main(n):
         temp_seq['id'] = TRANSCRIPT_ID
         df_seq = pd.concat([df_seq, temp_seq], axis=0)
 
-    df_seq = df_seq.replace(["A", "C", "G", "T", "N"], [0, 1, 1, 0, 0])
+    df_seq = df_seq.replace(["A", "C", "G", "T", "N", "S"], [0, 1, 1, 0, 0, 1])
+    df_seq = df_seq.replace('[A-Z]', 0, regex=True)
     df_seq.reset_index(inplace=True, drop=True)
     df_seq = df_seq.drop('id', axis=1)
 

@@ -1,4 +1,3 @@
-,name,display_name
 0,btaurus_gene_ensembl,Cow genes (ARS-UCD1.2)
 1,dclupeoides_gene_ensembl,Denticle herring genes (fDenClu1.1)
 2,mspicilegus_gene_ensembl,Steppe mouse genes (MUSP714)

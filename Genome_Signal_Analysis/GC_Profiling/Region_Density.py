@@ -32,13 +32,17 @@ def spare_matrix(file_number):
     intron_density = density_array(trans_df, to_rep, [0, 0, 0, 1, 0, 0])
     UUTR_density = density_array(trans_df, to_rep, [1, 0, 0, 0, 0, 0])
     DUTR_density = density_array(trans_df, to_rep, [0, 0, 1, 0, 0, 0])
+    UF_density = density_array(trans_df, to_rep, [0, 0, 0, 0, 1, 0])
+    DF_density = density_array(trans_df, to_rep, [0, 0, 0, 0, 0, 1])
 
     exon_density['length'] = total_trans
     intron_density['length'] = total_trans
     UUTR_density['length'] = total_trans
     DUTR_density['length'] = total_trans
+    UF_density['length'] = total_trans
+    DF_density['length'] = total_trans
 
-    return exon_density, intron_density, UUTR_density, DUTR_density
+    return exon_density, intron_density, UUTR_density, DUTR_density, UF_density, DF_density
 
 if __name__ == "__main__":
 
@@ -49,6 +53,8 @@ if __name__ == "__main__":
     intron_df = pd.DataFrame()
     UUTR_df = pd.DataFrame()
     DUTR_df = pd.DataFrame()
+    UF_df = pd.DataFrame()
+    DF_df = pd.DataFrame()
 
     print('Generate the Region  Density........')
 
@@ -56,31 +62,40 @@ if __name__ == "__main__":
         iter_seq = range(1, Total_Input_Files+1)
         pool = [executor.submit(spare_matrix, file_number=i) for i in iter_seq]
         for j in concurrent.futures.as_completed(pool):
-            exon_temp, intron_temp, UUTR_temp, DUTR_temp = j.result()
+            exon_temp, intron_temp, UUTR_temp, DUTR_temp, UF_temp, DF_temp = j.result()
 
             exon_df = pd.concat([exon_df, exon_temp], axis=1)
             intron_df = pd.concat([intron_df, intron_temp], axis=1)
             UUTR_df = pd.concat([UUTR_df, UUTR_temp], axis=1)
             DUTR_df = pd.concat([DUTR_df, DUTR_temp], axis=1)
+            UF_df = pd.concat([UF_df, UF_temp], axis=1)
+            DF_df = pd.concat([DF_df, DF_temp], axis=1)
+
 
     exon_all = exon_df.sum(axis=1)
     intron_all = intron_df.sum(axis=1)
     UUTR_all = UUTR_df.sum(axis=1)
     DUTR_all = DUTR_df.sum(axis=1)
+    UF_all = UF_df.sum(axis=1)
+    DF_all = DF_df.sum(axis=1)
 
     exon_all_density = exon_all/exon_all['length']
     intron_all_density = intron_all/intron_all['length']
     UUTR_all_density = UUTR_all/UUTR_all['length']
     DUTR_all_density = DUTR_all/DUTR_all['length']
+    UF_all_density = UF_all/UF_all['length']
+    DF_all_density = DF_all/DF_all['length']
 
     exon_all_density.drop('length', axis=0, inplace=True)
     intron_all_density.drop('length', axis=0, inplace=True)
     UUTR_all_density.drop('length', axis=0, inplace=True)
     DUTR_all_density.drop('length', axis=0, inplace=True)
+    UF_all_density.drop('length', axis=0, inplace=True)
+    DF_all_density.drop('length', axis=0, inplace=True)
 
 
-    densities = pd.DataFrame([exon_all_density, intron_all_density, UUTR_all_density, DUTR_all_density],
-                             index=['exon', 'intron', 'UUTR', 'DUTR'])
+    densities = pd.DataFrame([exon_all_density, intron_all_density, UUTR_all_density, DUTR_all_density, UF_all_density, DF_all_density],
+                             index=['exon', 'intron', 'UUTR', 'DUTR', 'UF', 'DF'])
 
     densities_T = densities.T
     densities_T['position'] = densities_T.index
@@ -100,7 +115,7 @@ if __name__ == "__main__":
     plt.savefig(ELEMENT_DENSITY_CHART)
 
     print('Generate the Rolling Region Density........')
-    for k in ['exon', 'intron', 'UUTR', 'DUTR']:
+    for k in ['exon', 'intron', 'UUTR', 'DUTR', 'UF', 'DF']:
 
         densities_T[k] = densities_T[k].rolling(window=147,
                                                                min_periods=1,

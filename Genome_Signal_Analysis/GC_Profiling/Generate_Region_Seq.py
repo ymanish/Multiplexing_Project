@@ -99,17 +99,12 @@ def genomic_positions_plant(strand, header):
     EXON_ENDS = [int(i) for i in header[7].split(';')]  # array
 
     TSS = int(header[8])
-    # STRAND=int(header[11])
+    # STRAND=int(header[9])
 
-    # G_CDS_START=[int(i) for i in header[12].split(';')] #array
-    # G_CDS_END=[int(i) for i in header[13].split(';')] #array
+    EXON_RANK = [int(i) for i in header[10].split(';')]  # array
+    CHR = header[11]
 
-    EXON_RANK = [int(i) for i in header[12].split(';')]  # array
-
-    # CDS_START=[int(i) for i in header[15].split(';')]  #array
-    # CDS_END=[int(i) for i in header[16].split(';')]  #array
-
-    return GENE_ID, TRANSCRIPT_ID, FIVE_UTR_START, FIVE_UTR_END, THREE_UTR_START, THREE_UTR_END, EXON_STARTS, EXON_ENDS, TSS, EXON_RANK
+    return GENE_ID, TRANSCRIPT_ID, FIVE_UTR_START, FIVE_UTR_END, THREE_UTR_START, THREE_UTR_END, EXON_STARTS, EXON_ENDS, TSS, EXON_RANK, CHR
 
 
 def positive_strand_positions(FIVE_UTR_START, FIVE_UTR_END, THREE_UTR_START, THREE_UTR_END, TSS):
@@ -234,8 +229,7 @@ def formatting_file(n):
     modified_human_genes_file = open(REGION_FILE_PATH+"\/region_group_" + str(n) + ".fasta", "w")
 
     for seq_record in SeqIO.parse(SEQ_FILE_PATH+"\group_" + str(n) + ".fasta", "fasta"):
-        print(seq_record.id)
-        if GROUP == 'Eukaryote':
+        if GROUP == 'Vertebrate':
 
             header = (seq_record.id).split('|')
             print(header[2])
@@ -248,11 +242,14 @@ def formatting_file(n):
         else:
             header = (seq_record.id).split('|')
             print(header[1])
+            if SPECIES_NAME == 'lsativa_eg_gene':
+                id = header[1] + '_' + header[2] + '_' + header[3]
+                del header[1:4]
+                header.insert(1, id)
             id = header[1]
             sequence = seq_record.seq
             cod_strand = int(header[9])
-
-            GENE_ID, TRANSCRIPT_ID, FIVE_UTR_START, FIVE_UTR_END, THREE_UTR_START, THREE_UTR_END, EXON_STARTS, EXON_ENDS, TSS, EXON_RANK = genomic_positions_plant(cod_strand, header)
+            GENE_ID, TRANSCRIPT_ID, FIVE_UTR_START, FIVE_UTR_END, THREE_UTR_START, THREE_UTR_END, EXON_STARTS, EXON_ENDS, TSS, EXON_RANK, CHR = genomic_positions_plant(cod_strand, header)
 
         if cod_strand == 1:
             uutr_starts, uutr_stops, dutr_starts, dutr_stops = positive_strand_positions(FIVE_UTR_START, FIVE_UTR_END,
