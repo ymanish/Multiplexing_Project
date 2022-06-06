@@ -1,0 +1,96 @@
+#!/bin/bash
+# ----------------SLURM Parameters----------------
+#SBATCH -p all.q
+#SBATCH -n 60
+#SBATCH --mem-per-cpu=7G
+#SBATCH -N 1
+#SBATCH --mail-type=ALL
+#SBATCH -J AA_profiling
+#SBATCH -D /home/pol_schiessel/maya620d/Genome_Signal_Analysis/AA_Profiling
+#SBATCH --output=Array_eukaryote.%A_%a.out
+#SBATCH --error=Array_eukaryote.%A_%a.error
+#SBATCH -A undefined
+#SBATCH --array=1-118%4
+### Submit 2 tasks with task ID 1,2. Run max 2 tasks concurrently
+# ----------------Load Modules--------------------
+module load apps/biopython/1.79
+module load apps/python3/3.9.5
+
+#------------------Get Arguments and Create Directory--------
+### org_list.txt contains 1000 lines with 2 arguments per line.
+###    Line <i> contains arguments for run <i>
+
+param_store=all_org_list.txt
+
+#Vertebrate or Yeast or Plant
+org_group='Vertebrate'
+default_seq_type = 'Amino_Acid'
+# Get first argument
+species_num=$(cat $param_store | awk -F ',' -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $1}')
+# Get second argument
+species=$(cat $param_store | awk -F ',' -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $2}')
+echo $species_num
+echo $species
+echo $param_store
+echo $default_seq_type
+
+# ----------------Commands------------------------
+echo Downloading the $species Ensembl Data
+### For Plant adn Eukaryote Run Command 1 and Command2 respectively
+#wget -O /group/pol_schiessel/05_Projekte/manish/Multiplexing/Ensembles_Data/$species.fasta 'http://plants.ensembl.org/biomart/martservice?query=<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Query><Query  virtualSchemaName = "plants_mart" formatter = "FASTA" header = "0" uniqueRows = "0" count = "" datasetConfigVersion = "0.6" ><Dataset name = "'$species'" interface = "default" ><Filter name = "downstream_flank" value = "1000"/><Filter name = "upstream_flank" value = "1000"/><Filter name = "transcript_biotype" value = "protein_coding"/><Attribute name = "ensembl_gene_id" /><Attribute name = "ensembl_transcript_id" /><Attribute name = "transcript_exon_intron" /><Attribute name = "5_utr_start" /><Attribute name = "5_utr_end" /><Attribute name = "3_utr_start" /><Attribute name = "3_utr_end" /><Attribute name = "exon_chrom_start" /><Attribute name = "exon_chrom_end" /><Attribute name = "transcription_start_site" /><Attribute name = "strand" /><Attribute name = "rank" /><Attribute name = "chromosome_name" /></Dataset></Query>' &&
+wget -O /group/pol_schiessel/05_Projekte/manish/Multiplexing/Ensembles_Data/$species.fasta 'http://www.ensembl.org/biomart/martservice?query=<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Query><Query  virtualSchemaName = "default" formatter = "FASTA" header = "0" uniqueRows = "0" count = "" datasetConfigVersion = "0.6" ><Dataset name = "'$species'" interface = "default" ><Filter name = "upstream_flank" value = "1000"/><Filter name = "downstream_flank" value = "1000"/><Filter name = "transcript_biotype" value = "protein_coding"/><Attribute name = "ensembl_gene_id" /><Attribute name = "ensembl_gene_id_version" /><Attribute name = "ensembl_transcript_id" /><Attribute name = "ensembl_transcript_id_version" /><Attribute name = "transcript_exon_intron" /><Attribute name = "5_utr_start" /><Attribute name = "5_utr_end" /><Attribute name = "3_utr_start" /><Attribute name = "3_utr_end" /><Attribute name = "exon_chrom_start" /><Attribute name = "exon_chrom_end" /><Attribute name = "transcription_start_site" /><Attribute name = "strand" /><Attribute name = "rank" /><Attribute name = "chromosome_name" /></Dataset></Query>' &&
+echo Saved the $species Ensemble Data &&
+
+echo Create directory for $species fasta file spliting &&
+# mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Data/$species &&
+
+mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Data/$species/region_dir &&
+mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Data/$species/seq_dir &&
+mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Data/$species/aa_dir &&
+
+mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Data/$species/mrna_region_dir &&
+mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Data/$species/mrna_seq_dir &&
+mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Data/$species/mrna_aa_dir &&
+
+
+python3 Split_fasta_file.py $species $default_seq_type &&
+echo Splited the $species Ensemble Data &&
+
+rm /group/pol_schiessel/05_Projekte/manish/Multiplexing/Ensembles_Data/$species.fasta &&
+
+python3 Generate_Region_Seq.py $species $default_seq_type &&
+echo Region generated for $species Data &&
+
+python3 Generate_Amino_Seq.py $species $default_seq_type &&
+echo Amino Acid region generated for $species Data &&
+
+python3 mRNA_seq_generate.py $species $default_seq_type &&
+echo mRNA Region generated for $species Data &&
+
+python3 Generate_mRNA_AA_Seq.py $species $default_seq_type &&
+echo mRNA AA generated for $species Data &&
+
+for seq_type in 'Amino_Acid' 'Amino_Acid_mRNA' 'Amino_Acid_mRNA_ATG'
+do
+  echo Create directory for $species Results &&
+
+  mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Results/$org_group/$species/$seq_type/Files &&
+  mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Results/$org_group/$species/$seq_type/Charts &&
+  mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Results/$org_group/$species/$seq_type/SEL_CHARTS &&
+
+  mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Results/$org_group/$species/NUCLO/$seq_type/Files &&
+  mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Results/$org_group/$species/NUCLO/$seq_type/Charts &&
+  mkdir -p /group/pol_schiessel/05_Projekte/manish/Multiplexing/Results/$org_group/$species/NUCLO/$seq_type/SEL_CHARTS &&
+
+  python3 Inter_regional_profile.py $species $seq_type &&
+  echo Amino_acid_GC content complete for $species Data &&
+done
+
+
+rm -r /group/pol_schiessel/05_Projekte/manish/Multiplexing/Data/$species/region_dir &&
+rm -r /group/pol_schiessel/05_Projekte/manish/Multiplexing/Data/$species/seq_dir
+rm -r /group/pol_schiessel/05_Projekte/manish/Multiplexing/Data/$species/aa_dir
+
+rm -r /group/pol_schiessel/05_Projekte/manish/Multiplexing/Data/$species/mrna_region_dir
+rm -r /group/pol_schiessel/05_Projekte/manish/Multiplexing/Data/$species/mrna_seq_dir
+rm -r /group/pol_schiessel/05_Projekte/manish/Multiplexing/Data/$species/mrna_aa_dir

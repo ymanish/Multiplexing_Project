@@ -34,8 +34,8 @@ def formatting_file(n):
 
     print(n)
     for (seq_record_1, seq_record_2) in zip(
-            SeqIO.parse(REGION_FILE_PATH + "\/region_group_" + str(n) + ".fasta", "fasta"),
-            SeqIO.parse(SEQ_FILE_PATH + "\group_" + str(n) + ".fasta", "fasta")):
+            SeqIO.parse(pre_mrna_REGION_FILE_PATH + "\/region_group_" + str(n) + ".fasta", "fasta"),
+            SeqIO.parse(pre_mrna_SEQ_FILE_PATH + "\group_" + str(n) + ".fasta", "fasta")):
         region_header = seq_record_1.id
         seq_header = seq_record_2.id
         region = seq_record_1.seq[1000:]
