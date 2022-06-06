@@ -226,9 +226,17 @@ def region_sequence(seq, uutr_starts, uutr_stops, dutr_starts, dutr_stops, mexon
 
 def formatting_file(n):
 
-    modified_human_genes_file = open(REGION_FILE_PATH+"\/region_group_" + str(n) + ".fasta", "w")
+    if SEQ_TYPE == 'pre_mRNA':
+        Region_DIR = REGION_FILE_PATH
+        Seq_DIR = SEQ_FILE_PATH
+    else:
+        Region_DIR = pre_mrna_REGION_FILE
+        Seq_DIR = pre_mrna_SEQ_FILE
 
-    for seq_record in SeqIO.parse(SEQ_FILE_PATH+"\group_" + str(n) + ".fasta", "fasta"):
+
+    modified_human_genes_file = open(Region_DIR+"\/region_group_" + str(n) + ".fasta", "w")
+
+    for seq_record in SeqIO.parse(Seq_DIR+"\group_" + str(n) + ".fasta", "fasta"):
         if GROUP == 'Vertebrate':
 
             header = (seq_record.id).split('|')

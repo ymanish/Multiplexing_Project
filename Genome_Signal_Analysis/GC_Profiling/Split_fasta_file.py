@@ -1,7 +1,6 @@
 from Bio import SeqIO
 from Initialise_GC_profiling import *
 
-os.system("Initialise_GC_profiling.py h_sapiens")
 def batch_iterator(iterator, batch_size):
     """Returns lists of length batch_size.
 
@@ -32,8 +31,13 @@ def batch_iterator(iterator, batch_size):
 
 record_iter = SeqIO.parse(ENSEMBLE_FILE, "fasta")
 
+if SEQ_TYPE == 'pre_mRNA':
+    Seq_DIR = SEQ_FILE_PATH
+else:
+    Seq_DIR = pre_mrna_SEQ_FILE
+
 for i, batch in enumerate(batch_iterator(record_iter, 1000)):
-    filename = SEQ_FILE_PATH+"\group_%i.fasta" % (i + 1)
+    filename = Seq_DIR+"\group_%i.fasta" % (i + 1)
     with open(filename, "w") as handle:
         count = SeqIO.write(batch, handle, "fasta")
     print("Wrote %i records to %s" % (count, filename))

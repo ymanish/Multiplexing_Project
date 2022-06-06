@@ -13,23 +13,28 @@ def main(n):
 
     for seq_record in SeqIO.parse(SEQ_FILE_PATH+"/group_"+str(n)+".fasta", "fasta"):
         header = seq_record.id.split('|')
-        if GROUP == 'Plant':
-            # print(header[1])
-            TRANSCRIPT_ID = header[1]
-        else:
-            # print(header[2])
-            TRANSCRIPT_ID = header[2]
+        # if GROUP == 'Plant':
+        #     # print(header[1])
+        #     TRANSCRIPT_ID = header[1]
+        # else:
+        #     # print(header[2])
+        #     TRANSCRIPT_ID = header[2]
 
-        sequ = list(seq_record.seq[:2000])
+        if SEQ_TYPE == 'mRNA_ATG':
+            sequ = list(seq_record.seq[int(header[1])-1000:int(header[1])+1000])
+
+        else:
+            sequ = list(seq_record.seq[:2000])
+
         temp_seq = pd.DataFrame(sequ, index=COL)
         temp_seq = temp_seq.T
-        temp_seq['id'] = TRANSCRIPT_ID
+        # temp_seq['id'] = TRANSCRIPT_ID
         df_seq = pd.concat([df_seq, temp_seq], axis=0)
 
     df_seq = df_seq.replace(["A", "C", "G", "T", "N", "S"], [0, 1, 1, 0, 0, 1])
     df_seq = df_seq.replace('[A-Z]', 0, regex=True)
     df_seq.reset_index(inplace=True, drop=True)
-    df_seq = df_seq.drop('id', axis=1)
+    # df_seq = df_seq.drop('id', axis=1)
 
     return df_seq.sum(axis=0), len(df_seq)
 
@@ -53,28 +58,45 @@ if __name__ == "__main__":
     absolute_gc = df.sum(axis=1) / len_df
     absolute_gc.to_csv(ABSOLUTE_GC_FILE)
 
-    plt.figure(figsize=(20, 10))
-    sns.scatterplot(x=range(-1000, 1000), y=absolute_gc)
-    plt.xlabel("Position w.r.t TSS")
-    plt.ylabel("%GC content")
-    plt.title("GC content per base position")
-    plt.xticks(np.arange(-1000, 1000, 50), rotation=45)
+    plt.figure(figsize=(10, 7))
+    sns.scatterplot(x=range(-1000, 1000), y=absolute_gc, fc='none', s=1.5, linewidth=1, edgecolor="black")
+    if SEQ_TYPE == 'mRNA_ATG':
+        plt.xlabel("position w.r.t TIS", fontsize=9)
+
+    else:
+        plt.xlabel("position w.r.t TSS", fontsize=9)
+    plt.ylabel("GC content", fontsize=9)
+    plt.xticks(ticks=np.arange(-1000, 1000, 100))
+    plt.tick_params(axis='x', labelrotation=45, labelsize=8)
+    plt.tick_params(axis='y', labelsize=8)
+    plt.title("GC content per base-pair position", size=10, fontweight='bold')
+    plt.xlim(-1000, 1000)
+    plt.grid(linestyle='--', linewidth=0.5)
+    plt.legend(handletextpad=0, loc='upper right', markerscale=0.5, fontsize=8)
     plt.savefig(ABSOLUTE_GC_CHART)
-    # plt.show()
+
 
     print ('Generate Nucleosomal Absolute GC content.............')
     Nucleosomal_GC_content = absolute_gc.rolling(window=147,  min_periods=1, center=True).mean()
 
     Nucleosomal_GC_content.to_csv(NUCLO_ABSOLUTE_GC_FILE)
 
-    plt.figure(figsize=(20, 10))
-    sns.scatterplot(x=range(-1000, 1000), y=Nucleosomal_GC_content)
-    plt.xlabel("Position w.r.t TSS")
-    plt.ylabel("Nucleosomal GC content")
-    plt.title("GC content per base position")
-    plt.xticks(np.arange(-1000, 1000, 50), rotation=45)
+    plt.figure(figsize=(10, 7))
+    sns.scatterplot(x=range(-1000, 1000), y=Nucleosomal_GC_content, fc='none', s=1.5, linewidth=1, edgecolor="black")
+    if SEQ_TYPE == 'mRNA_ATG':
+        plt.xlabel("position w.r.t TIS", fontsize=9)
+
+    else:
+        plt.xlabel("position w.r.t TSS", fontsize=9)
+    plt.ylabel("Nucleosomal GC content", fontsize=9)
+    plt.xticks(ticks=np.arange(-1000, 1000, 100))
+    plt.tick_params(axis='x', labelrotation=45, labelsize=8)
+    plt.tick_params(axis='y', labelsize=8)
+    plt.title("Nucleosomal GC content per base-pair position", size=10, fontweight='bold')
+    plt.xlim(-1000, 1000)
+    plt.grid(linestyle='--', linewidth=0.5)
+    plt.legend(handletextpad=0, loc='upper right', markerscale=0.5, fontsize=8)
     plt.savefig(NUCLO_ABSOLUTE_GC_CHART)
-    # plt.show()
 
     end = time.perf_counter()
     print(f'Finished in {round(end - start, 2)} second(s)')
